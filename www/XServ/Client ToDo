@@ -1,0 +1,23 @@
+Rewrite Socket for String and Bytebuffer
+Need to sort out how we set byte order correctly for Server.
+ByteOrdering 0x42 0x6C
+Initial window in Xrequest.java Component Init ( Should try to discover Applet Window size)
+Add Graphic getGraphic ( Image, straight panel ) - done
+Graphics Context
+Add events for panel
+Send redraw event back to X11
+Deal with close event
+Frame Name - Change Window Attribute?
+Support for Mapped Windows
+    Deal with in server send map n windows in one request
+Add support for failed application command
+Add support for user login including failure
+Test invalid inputs host, port, application
+
+
+
+Colour map for PutImage needs sorting
+
+Window & Pixmap treated similar Windows type = 0, Pixmap type = 1
+
+Why is index needed in Xwindow?

@@ -1,0 +1,43 @@
+
+Test new sockets and process structure
+SetupServerX is not correct needs changing
+Byte order X11 Client socket
+Byte order java socket
+Clear socket some option/flag
+Update new sockets and process structure for inetd
+Create XRequest & Xsocket class
+Improve Tracing
+Test xcalc
+Test xterm
+Need to understand difference VisualID, ColorMap
+Connection Setup : Byteorder of images, ColorMaps, VisualID etc
+
+Change Window and Pixmap handling so that just send to Java Client and Client to deal with.
+
+General Sort out use of puts and writes
+
+GetInputFocus Just return None for now.
+removePixMap just reports
+
+Colour
+
+Java does not seem to have any concept of reality about colour. For example that displays may only support
+a minimum number of colours. It does not have the facilities like X11 for managing Colour maps and
+allocating colours. As java supports sRGB colour one can only assume that it assumes the browser
+has the ability to display all colours as sRGB regardless of display monitor.
+
+Therefore all colour map handling will be done on the server and facilities
+added to ship colour maps to the java client where they will be implemented as Index colour model.
+The default colourmap will be that of the server X11 system, maybe a future enhancement would be
+to set the initial colour map from the client based on browser(?)
+
+AllocColor
+Add code to notify java client of change in colour map.
+
+ColorMap
+Add code to setup initial colour map
+
+Fonts
+  Error handling on direct X requests i.e. ::XFreeFontInfo(namePtr,fontPtr,num);
+  fontPointSize is not at all correct maybe an XFont call to determine size
+

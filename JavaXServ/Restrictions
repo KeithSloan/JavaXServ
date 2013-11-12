@@ -1,0 +1,4 @@
+1) Only Window property requests to Root window are supported.
+
+2) Initial Colour Map is set to the same as the X11 system where JavaXServ is run.
+   Java Client will use an Index Colour Model based on the server Colour Map.

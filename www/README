@@ -1,0 +1,17 @@
+JavaXServ website readme.
+
+This directory needs to be accessed by the HTML server typically Apache2.
+
+For a typical apache2 configuration then symbolically link from /var/www to this directory.
+Or if not exclusive to JavaXserv then a subdirectory off of /var/www
+
+html files must be configured to point to the place where JavaXServ is running
+<applet code=server.class width=200 height=50>
+<param name=server value="127.0.0.1">
+<param name=port value=6789>
+<param name=application value="xclock">
+</applet>
+
+i.e. server value is host where JavaXServ is running
+port value is the port on which JavaXserv is listening
+application value is the name of the XClient that JavaXServ should fork
