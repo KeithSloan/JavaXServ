@@ -340,25 +340,32 @@ public void QueryColors(int num)
    sock.flush();
    }
 
+public static String hex(int n)
+    {
+    // call toUpperCase() if that's required
+    return String.format("0x%8s", Integer.toHexString(n)).replace(' ', '0');
+    }
+
 public void createGC(int wlen)
     {
-	int clearLen,len;
-	int cid, drawable, bitmask,function,planeMask,foreGround,backGround;
-	int lineWidth,lineStyle,capStyle,joinStyle,fillStyle,fillRule;
-	int tile,stipple,stippleXorig,stippleYorig,font;
-	int clipXorig,clipYorig,clipMask,dashOffset,dashes,arcMode;
+    int clearLen,len;
+    int cid, drawable, bitmask,function,planeMask,foreGround,backGround;
+    int lineWidth,lineStyle,capStyle,joinStyle,fillStyle,fillRule;
+    int tile,stipple,stippleXorig,stippleYorig,font;
+    int clipXorig,clipYorig,clipMask,dashOffset,dashes,arcMode;
 	
-	Trail("CreateGC : WordLen "+wlen);
+    Trail("CreateGC : WordLen "+wlen);
     cid      = sock.readCard32();  	// Graphic Context
     Trail("CreateGC : "+cid);
     drawable = sock.readCard32();
     bitmask  = sock.readCard32();
-    Trail("Bit Mask : "+bitmask);
+    Trail("Bit Mask : "+hex(bitmask));
     len = 16;
     foreGround = backGround = lineWidth = lineStyle = font = 0;
     if (( bitmask & 0x00000001) == 0x00000001)
        {
        function = sock.readByte(true);
+       Trail("Function : "+function);
        len++;
        }
     if (( bitmask & 0x00000002) == 0x00000002)
@@ -478,6 +485,9 @@ public void createGC(int wlen)
     GCSet.add(cid,bitmask,foreGround,backGround,lineWidth,lineStyle,font);
     }
 
+
+
+
 public int action()
    {
    int parm;
@@ -509,19 +519,19 @@ public int action()
       {
       case 1 :	// Create Window
           p = sock.readCard16();	// parent
-	      i = sock.readCard16();
+	  i = sock.readCard16();
           x = sock.readCard16(); 
           y = sock.readCard16(); 
           w = sock.readCard16(); 
           h = sock.readCard16(); 
           Trail("Create Window Target : "+i+" Parent : "+p);
-	      Trail("x "+x+" y "+y+" w "+w+" h "+h);
+	  Trail("x "+x+" y "+y+" w "+w+" h "+h);
           if ( p == 0 && w == 1 && h == 1)
-          {
+             {
              w = 256;
              h = 256;
-          }
-	      Windows[i] = Windows[p].create(i,p,x,y,w,h);
+             }
+	  Windows[i] = Windows[p].create(i,p,x,y,w,h);
           Windows[p].registerChild(Windows[i]);
 //	      Windows[i].buildImage();
           break;
@@ -533,8 +543,7 @@ public int action()
           break;
 
       case 12 :	// Config Window
-	  {
- 	  i = sock.readCard32();
+	  i = sock.readCard32();
 	  p = Windows[i].parentIndex();
           Trail("Config window : "+i);
           if ( p == 0 )
@@ -544,9 +553,8 @@ public int action()
           else if ( Windows[i].configWindow() == true )
              {
              Windows[p].resetChild(Windows[i]);
-	         }
-          }
-	  break;
+	     }
+          break;
 
       case  16 :
     	  InternAtom(parm,byteLen);
@@ -585,7 +593,7 @@ public int action()
 	  case 59 :		// Set Clip Rectangles
           jw = sock.readCard32();
           Trail("Clip Rectangle : "+jw);
-          gp =  Windows[jw].getGraphics();
+          gp =  Windows[jw].getGraphics(); // Only action if valid Windows found
           x  = sock.readCard16();
           y  = sock.readCard16();
           count = (wordLen - 3) / 2;
@@ -630,7 +638,7 @@ public int action()
           // Trail(" To "+dst+" x "+sx+" y "+sy);
           // img = Windows[src].getImage(sx,sy,w,h);
           // Windows[dst].putImage(img,dx,dy);
-	      }
+	  }
           break;
  
       case 63 :		// CopyPlane
@@ -652,7 +660,7 @@ public int action()
           // Trail(" To "+dst+" x "+sx+" y "+sy);
           // img = Windows[src].getImage(sx,sy,w,h);
           // Windows[dst].putImage(img,dx,dy);
-	      }
+	  }
           break;
 
       case 65 :		// PolyLine
@@ -660,7 +668,8 @@ public int action()
     	  jw = sock.readCard32();
     	  Trail("PolyLine : "+parm+" Window : "+jw);
           gp =  Windows[jw].getGraphics();
-          gp.setColor(Color.blue);
+          //gp.setColor(Color.blue);
+	  gp.setXORMode(Color.yellow);
           gc = sock.readCard32();
           Trail("Graphics Context : "+gc);
           Trail("points : "+count);
@@ -668,23 +677,23 @@ public int action()
           cy = sock.readCard16();
           i = 1;
           switch (parm)
-          {
-  	      case 0 :	
+             {
+  	     case 0 :	
 	          while (  i < count )
 	             {
-                 x = sock.readCard16();
+                     x = sock.readCard16();
 	             y = sock.readCard16();
 	             gp.drawLine(cx,cy,x,y);
 	             cx = x;
 	             cy = y;
 	             i++;
-		         }
-	          break;
+		     }
+	         break;
 
 	     case 1 :
 	          while (  i < count )
 	             {
-                 x = cx + sock.readCard16();
+                     x = cx + sock.readCard16();
 	             y = cy + sock.readCard16();
 	             gp.drawLine(cx,cy,x,y);
 	             cx = x;
@@ -694,20 +703,20 @@ public int action()
 	          break;
 
 	     }
-          Windows[jw].repaint();
+          //Windows[jw].repaint();
 	  break;
 
       case 66 : 	// Line segment
     	  jw = sock.readCard32();
           gc = sock.readCard32();
           count = (wordLen - 3) >> 1;
-	      Trail("Segment - Window : "+jw+" : "+count);
-	      i = 0;
+	  Trail("Segment - Window : "+jw+" : "+count);
+	  i = 0;
           gp = Windows[jw].getGraphics();
           Trail("Graphic "+gp);
           gp.setColor(Color.black);
           while ( i < count )
-          {
+             {
              cx = sock.readCard16();
              cy = sock.readCard16();
              x = sock.readCard16();
@@ -715,7 +724,7 @@ public int action()
              gp.drawLine(cx,cy,x,y);
              Trail("x1 "+cx+" y1 "+cy+" x2 "+x+" y2 "+y);
              i++;
-	      }
+	     }
           Windows[jw].repaint();
 	  break;
 
@@ -753,38 +762,38 @@ public int action()
     	  Trail("Mode : "+m+" Shape : "+shape+" GC : "+gc);
           if ( count < 1024 )
              {
-        	 switch ( m )
-        	 	{
-        	 	case 0 :
-        	 		i = 0;
-        	 		while ( i < count )
-        	 		{	
-        	 			xArray[i] = sock.readCard16();
-        	 			yArray[i] = sock.readCard16();
-        	 			i++;
-        	 		}
-        	 		break;
+             switch ( m )
+        	{
+        	case 0 :
+        		i = 0;
+        		while ( i < count )
+        	           {	
+        	 	   xArray[i] = sock.readCard16();
+        	 	   yArray[i] = sock.readCard16();
+        	 	   i++;
+        	 	   }
+        	 	break;
 
-        	 	case 1 :
-        	 		i = 1;
-        	 		x = xArray[0] = sock.readCard16();
-        	 		y = yArray[0] = sock.readCard16();
-        	 		while ( i < count )
-        	 			{
-        	 			x += sock.readCard16();
-        	 			y += sock.readCard16();
-        	 			xArray[i] = x;
-        	 			yArray[i] = y;
-        	 			i++;
-        	 			}
-        	 		break;
-        	 	}
+        	case 1 :
+        		i = 1;
+        		x = xArray[0] = sock.readCard16();
+        		y = yArray[0] = sock.readCard16();
+        		while ( i < count )
+        	           {
+        	 	   x += sock.readCard16();
+        	 	   y += sock.readCard16();
+        	 	   xArray[i] = x;
+        	 	   yArray[i] = y;
+        	 	   i++;
+        	 	   }
+        	 	break;
+        	 }
         	 gp.fillPolygon(xArray,yArray,count);
              }
           else
              {
-        	 System.out.println("Too many points : "+count);
-        	 clearRequest(count << 2 );
+             System.out.println("Too many points : "+count);
+             clearRequest(count << 2 );
              }
           Windows[jw].repaint();
           break;
@@ -799,12 +808,12 @@ public int action()
           gp.setColor(Color.red);
           while ( count > 0 )
              {
-        	 xArray[0] = xArray[3] = sock.readCard16();
-        	 yArray[0] = yArray[1] = sock.readCard16();
-        	 xArray[1] = xArray[2] = sock.readCard16();
-        	 yArray[2] = yArray[3] = sock.readCard16();
-        	 gp.fillPolygon(xArray,yArray,4);
-        	 count--;
+             xArray[0] = xArray[3] = sock.readCard16();
+             yArray[0] = yArray[1] = sock.readCard16();
+             xArray[1] = xArray[2] = sock.readCard16();
+             yArray[2] = yArray[3] = sock.readCard16();
+             gp.fillPolygon(xArray,yArray,4);
+             count--;
              }	
           Windows[jw].repaint();
           break;
@@ -846,7 +855,7 @@ public int action()
           p = sock.readByte(false);	// Padding
           b = sock.readByte(false);
           Trail("Window : "+jw+ " Bits : "+b+" Left Padding "+p);
-	      sock.readCard16();	// Unused 
+	  sock.readCard16();		// Unused 
           i = byteLen - 24;
           Trail("PutImage : "+jw+" x "+x+" y "+y+" w : "+w+" h : "+h+" size "+i);
           imageBuff = new byte[i];
@@ -870,20 +879,20 @@ public int action()
           gp.setColor(Color.black);
           gp.setFont(currentFont);
           if ( i < 256 )
-	      {
-        	  sock.readBuff(textBuff,i);
-        	  textBuff[i] = 0;
-         	  Trail("String : "+textBuff+" "+x+" "+y);
-         	  // Old Problem with drawBytes
-         	  // gp.drawBytes(textBuff,0,i,x,y);
-         	  s = new String(textBuff);
-         	  gp.drawString(s,x,y);
-          }
+	     {
+             sock.readBuff(textBuff,i);
+             textBuff[i] = 0;
+             Trail("String : "+textBuff+" "+x+" "+y);
+             // Old Problem with drawBytes
+             // gp.drawBytes(textBuff,0,i,x,y);
+             s = new String(textBuff);
+             gp.drawString(s,x,y);
+             }
           else
-	      {
-        	  System.out.println("PolyText8 font shift : Help!");
-        	  i = 0;
-	      }
+	     {
+             System.out.println("PolyText8 font shift : Help!");
+             i = 0;
+	     }
           // delete repaint ???
           Windows[jw].repaint();
           clearRequest(byteLen - 18 - i);
@@ -1407,6 +1416,7 @@ public void printOperation(int opcode)
       }
    }
 
+   // No longer used
    public boolean connectionInit()
       {
       int lenAuthName;
@@ -1424,12 +1434,13 @@ public void printOperation(int opcode)
       unused = sock.readCard16();
       sock.readString(lenAuthName);
       sock.readString(lenAuthData);
-      Trail("Order : "+(int) byteOrder);
+      Trail("Order : "+byteOrder);
       Trail(" Version :"+majorVersion+" Minor "+minorVersion);
       Trail(" Auth lengths :"+lenAuthName+" len "+lenAuthData);
       return(true);
       }
 
+   // No longer used
    public void sendAcceptAuth()
       {
       sock.replyHeader8(1,majorVersion,minorVersion);
@@ -1456,6 +1467,7 @@ public void printOperation(int opcode)
       sock.flushAuth();
       }
        
+    // No longer used
     public void addFormat(int d,int b)
       {
       sock.addByte(1);                      // depth
@@ -1465,6 +1477,7 @@ public void printOperation(int opcode)
       sock.addCard32(0);                    // unused
       }
 
+    // No longer used
     public void addVisual(int v)
       {
       sock.addCard32(v);                    // Visual Id
@@ -1477,6 +1490,7 @@ public void printOperation(int opcode)
       sock.addCard32(0);                    // Unused
       }
        
+    // No longer used
     public void addDepth(int depth,int nos)
       {
       sock.addByte(depth);                  // depth
@@ -1485,6 +1499,7 @@ public void printOperation(int opcode)
       sock.addCard32(0);                    // unused
       }
 
+    // No longer used
     public void addScreen()
       {
       sock.addCard32(0);                    // window - root

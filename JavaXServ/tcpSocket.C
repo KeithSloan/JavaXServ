@@ -16,6 +16,7 @@
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+#include <cstring>
 #include <stdio.h>
 #include "tcpSocket.h"
 

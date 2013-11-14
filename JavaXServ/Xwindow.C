@@ -18,15 +18,17 @@
 
 #include <iostream>
 #include "Xwindow.h"
-#include <stdio.h>
-
+#include <cstring>
 extern "C"              // C includes
 {
 #define NEED_EVENTS
 #define NEED_REPLIES
+#include <stdio.h>
 #include <X11/X.h>
 #include <X11/Xproto.h>
 }
+
+int windowCount;
 
 // Windows are tracked on the Server and sento the Client
 Xwindow::Xwindow(int t, int id, Xwindow *par,int em,int x,int y,int w,int h,int d,int b)
@@ -46,6 +48,7 @@ if ( t == -1 )
    last     = this;
    mapState = 2;
    javaId   = 0;
+   windowCount = 1;
    }
 else
    {
@@ -54,7 +57,7 @@ else
    parent   = par;
    last -> next = this;
    mapState  = 0;
-   javaId    = -1;
+   javaId    = windowCount;
    }
 next      = NULL;
 last      = this;
@@ -69,6 +72,7 @@ border    = b;
 firstSub  = lastSub = NULL;
 levelNext = levelPrevious = NULL;
 numSub = 0;
+windowCount++;
 }
 
 Xwindow::~Xwindow(void)
@@ -88,7 +92,7 @@ void Xwindow::DumpWindow()
 int Xwindow::JavaWid(int wid)
 {
 Xwindow *ptr = next;
-
+int count;
 // Is it this window
 if ( windowId == wid )
    {
@@ -97,14 +101,15 @@ if ( windowId == wid )
 else
    {
    // Check remaining windows
-   while ( ptr != NULL && ptr -> windowId != wid )
+   while ( ptr != NULL && ptr -> windowId != wid && count < windowCount )
       {
       ptr = ptr -> next;
+      count++;
       }
    if ( ptr -> windowId != wid )
       {
       std::cerr << "**** ERROR **** Window " << wid << " Not found" << std::endl;
-      return(0);
+      return(-1);
       }
    }
 return(ptr -> javaId);
@@ -257,7 +262,7 @@ return(nextJavaWin++);
 }
 
 //------------------------------------------------------//
-// Create Java PixMap					                //
+// Create Java PixMap					//
 //------------------------------------------------------//
 void Xwindow::CreateJavaPixmap()
 {
@@ -287,7 +292,7 @@ javasock -> write((char *) &createPixmap,sizeof(createPixmap));
 }
 
 //------------------------------------------------------//
-// Expose dependant on current state        			//
+// Expose dependant on current state        		//
 //------------------------------------------------------//
 void Xwindow::expose(int num)
 {
@@ -331,7 +336,7 @@ if ( type == 0 )
    if ( w == 0 ) w = width;
    if ( h == 0 ) h = height;
    std::cerr << "Expose : " << x << " : " << y << " : " << w << " : " << h << std::endl;
-   ::memset(&event,0,sizeof(event));
+   std::memset(&event,0,sizeof(event));
    event.u.u.type = 12;
    event.u.u.sequenceNumber = num;
    event.u.expose.window = windowId;
@@ -361,14 +366,14 @@ return(1);
 }
 
 //------------------------------------------------------//
-// Notify Mapped					                    //
+// Notify Mapped					//
 //------------------------------------------------------//
 void Xwindow::NotifyMapped(int eid,int num)
 {
 xEvent event;
 
 std::cerr << "NotifyMapped - event : " << eid << " window : " << windowId << " Sequence Num : " << num << std::endl;
-::memset(&event,0,sizeof(event));
+std::memset(&event,0,sizeof(event));
 event.u.u.type = 19;
 event.u.u.sequenceNumber = num;
 event.u.mapNotify.event  = eid;
@@ -378,13 +383,13 @@ std::cerr << "Send Map Window Event" << std::endl;
 }
 
 //------------------------------------------------------//
-// Config Notified					                    //
+// Config Notified					//
 //------------------------------------------------------//
 void Xwindow::ConfigNotify(int mask,int num)
 {
 xEvent  event;
 
-::memset(&event,0,sizeof(event));
+std::memset(&event,0,sizeof(event));
 event.u.u.type = 22;
 event.u.u.sequenceNumber = num;
 if (( mask & StructureNotifyMask ) == StructureNotifyMask )
@@ -541,7 +546,7 @@ void Xwindow::GetGeometry(int root,int num)
 {
 xGetGeometryReply reply;
 
-memset((char *) &reply,0,sizeof(reply));
+std::memset((char *) &reply,0,sizeof(reply));
 reply.type   = 1;
 reply.depth  = depth;
 reply.sequenceNumber = num;
@@ -563,7 +568,7 @@ void Xwindow::GetWindowAttributes(int num)
 {
 xGetWindowAttributesReply reply;
 
-memset((char *) &reply,0,sizeof(reply));
+std::memset((char *) &reply,0,sizeof(reply));
 reply.type   = 1;
 reply.backingStore  = NotUseful;
 reply.sequenceNumber = num;
@@ -594,7 +599,7 @@ Xwindow *ptr = next;
 xQueryTreeReply reply;
 int i = numSub;
 
-memset((char *) &reply,0,sizeof(reply));
+std::memset((char *) &reply,0,sizeof(reply));
 reply.type   = 1;
 reply.sequenceNumber = num;
 reply.length    = numSub; 

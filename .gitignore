@@ -1,2 +1,4 @@
 *.class
-trace
+trace*
+traces
+DevelopmentNotes

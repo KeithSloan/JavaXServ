@@ -17,61 +17,62 @@
 
 public class GraphicsContext
    {
-   GraphicsContext		next;
-   GraphicsContext		previous;
-   int					cid;
-   int					bitmask;
-   int					foreGround;
-   int					backGround;
-   int					lineWidth;
-   int					lineStyle;
-   int					font;
+   GraphicsContext	next;
+   GraphicsContext	previous;
+   int			cid;
+   int			bitmask;
+   // Use public for speed
+   public int		foreGround;
+   public int		backGround;
+   public int		lineWidth;
+   public int		lineStyle;
+   public int		font;
    
    public GraphicsContext()
-      {
-      next = previous = null;
-      }
+	{
+	next = previous = null;
+	}
 
    private void Trail(String s)
-      {
-      // System.out.println(s);
-      }
+	{
+	// System.out.println(s);
+	}
   
    public void SetValues(int id,int bm, int fore, int back, int lw, int ls, int fnt )
-   	  {
-	  cid = id;
-	  bitmask = bm;
-	  foreGround = fore;
-	  backGround = back;
-	  lineWidth = lw;
-	  lineStyle = ls;
-	  font = fnt;
-   	  }
+   	{
+	cid = id;
+	bitmask = bm;
+	foreGround = fore;
+	backGround = back;
+	lineWidth = lw;
+	lineStyle = ls;
+	font = fnt;
+   	}
    
    public GraphicsContext getNext()
-      {
-	  return(next); 
-      }
+	{
+	return(next); 
+	}
    
    public GraphicsContext getPrevious()
-      {
-	  return(previous);
-      }
+	{
+	return(previous);
+	}
    
    public void setNext(GraphicsContext gc)
-      {
-	  next = gc;
-      }
+	{
+	next = gc;
+      	}
       
    public void setPrevious(GraphicsContext gc)
-      {
-	  previous = gc;
-      }
+	{
+	previous = gc;
+	}
    
    public int  getIdent()
-      {
-	  return(cid);
-      }
-    }
+	{
+	return(cid);
+        }
+   }
 
    

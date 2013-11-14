@@ -16,6 +16,8 @@
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
 #include <iostream>
+#include <cstring>
+#include <unistd.h>
 // #include "tcpSocket.h"
 #include "Xwindow.h"
 #include "stdio.h"
@@ -166,7 +168,7 @@ Xwindow::X11sock -> read((char *) &clientPrefix,sizeof(xConnClientPrefix));
 byteOrder = clientPrefix.byteOrder;
 std::cerr << "Byte Order of Client : " << byteOrder << std::endl;
 // Think I need to set byteorder on X11 socket
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.hdr.success = 1;
 reply.hdr.majorVersion = 11;
 reply.hdr.minorVersion = 0;
@@ -186,7 +188,7 @@ reply.setup.bitmapScanlinePad = 8;
 reply.setup.minKeyCode = FIRSTKEY;
 reply.setup.maxKeyCode = 141;
 reply.setup.pad2 = 0;
-strcpy(reply.vendor,"Keith  Sloan");
+strcpy(reply.vendor,"JavaXServ");
 reply.format1.depth = 1;
 reply.format1.bitsPerPixel = 1;
 reply.format1.scanLinePad = 8;          // Trace is in hex
@@ -195,7 +197,7 @@ reply.format8.bitsPerPixel = 8;
 reply.format8.scanLinePad  = 8;
 reply.window.windowId = rootWin -> X11windowId();
 // display is a global variable
-reply.window.defaultColormap = initialColourMap();
+reply.window.defaultColormap = initialColourMap(); // using default colour map from X11 where JavaXServ is running
 reply.window.whitePixel = 0x0;
 reply.window.currentInputMask = 0x4180003F;
 reply.window.pixWidth = 600;
@@ -212,12 +214,13 @@ reply.depth1.nVisuals = 0;
 reply.depth8.depth = 8;
 reply.depth8.nVisuals = 1;
 reply.visual8.visualID = 0x20;
-reply.visual8.c_class = StaticColor;
+reply.visual8.c_class = StaticColor;  // Need to support 8 bit Pseudocolour for Old Applications
 reply.visual8.bitsPerRGB = 8;
 reply.visual8.colormapEntries = 256;
 reply.visual8.redMask = 0xFF;
 reply.visual8.greenMask = 0xFF00;
 reply.visual8.blueMask = 0xFF0000;
+// Need to add support for 24bit true colour for new applications
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 std::cerr << "Reply Authourized" << std::endl;
 }
@@ -231,7 +234,7 @@ char name[120];
 ::memcpy(name,namePtr,ptr -> nbytes);
 name[ptr -> nbytes] = '\0';
 
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 std::cerr << "Reply sequence Number : " << sequenceNum << std::endl;
@@ -247,7 +250,7 @@ char *namePtr;
 int len;
 
 std::cerr << "getAtomName" << std::endl;
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 namePtr = XGetAtomName(display,ptr -> id);
@@ -261,7 +264,7 @@ void replyNoProperty(void)
 {
 xGetPropertyReply reply;
 
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.format = 0;
 reply.sequenceNumber = sequenceNum;
@@ -317,7 +320,7 @@ else
   bytes = 0;
   }
 std::cerr << "Send Reply to GetProperty" << std::endl;
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.format = format;
 reply.sequenceNumber = sequenceNum;
@@ -389,7 +392,7 @@ XFontStruct *fontStr;
 xQueryFontReply reply;
 int i;
 
-std::cerr << "Query Font fid : " << ptr -> id;
+std::cerr << "New Query Font fid : " << ptr -> id;
 // Find font in our table
 i = 0;
 while ( i < fontEntries && fontTable[i].fid != ptr -> id)
@@ -407,7 +410,7 @@ if ((fontStr = ::XQueryFont(display,fontTable[i].font)) == NULL )
    std::cerr << "Font not found" << std::endl;
    exit(1);
    }
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.pad1 = 0;
 reply.sequenceNumber = sequenceNum;
@@ -426,7 +429,9 @@ reply.fontDescent = fontStr -> descent;
 reply.nCharInfos = reply.maxCharOrByte2 - reply.minCharOrByte2 + 1;
 std::cerr << "Number of Chars : " << reply.nCharInfos << std::endl;
 std::cerr << "Number of properties : " << reply.nFontProps << std::endl;
-reply.length = 7 + (2 * reply.nFontProps) + ( 3 * reply.nCharInfos);
+std::cerr << "Size of reply : " << sizeof(reply) / 4 << std::endl;
+reply.length = (sizeof(reply)/4) - 8 + (2 * reply.nFontProps) + ( 3 * reply.nCharInfos); // Length is additional length so miuns 8 byte header
+std::cerr << "Reply Length : "<< reply.length << std::endl;
 Xwindow::X11sock -> assert();
 Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
 Xwindow::X11sock -> put((char *) fontStr -> properties,8 * reply.nFontProps);
@@ -458,7 +463,7 @@ strncpy(pattern,(char *) ptr + sizeof(xListFontsReq),ptr -> nbytes);
 pattern[ptr -> nbytes] = NULL;
 
 listPtr = ::XListFonts(display,pattern,ptr -> maxNames,&num);
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.nFonts = num;
@@ -527,7 +532,7 @@ pattern[ptr -> nbytes] = NULL;
 std::cerr << pattern << std::endl;
 
 namePtr = ::XListFontsWithInfo(display,pattern,ptr -> maxNames,&num,&fontPtr);
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 
 std::cerr << "Number : " << num << std::endl;
 reply.type = 1;
@@ -549,7 +554,7 @@ for ( i=0; i < num; i++)
     reply.fontAscent = wrkptr -> ascent;
     reply.fontDescent = wrkptr -> descent;
     std::cerr << "Number of properties : " << reply.nFontProps << std::endl;
-    reply.length = 7 + (2 * reply.nFontProps) + ((sl + 3) >> 2);
+    reply.length = (sizeof(reply) / 4) - 8 + (2 * reply.nFontProps) + ((sl + 3) >> 2); // Additional length i.e minus 8 byte header
     std::cerr << "Font string length " << sl;
     std::cerr << " rounded " << ((sl + 3) >> 2) << std::endl;
     Xwindow::X11sock -> assert();
@@ -627,7 +632,7 @@ std::cerr << "Change Property : " << namePtr << std::endl;
 xEvent event;
 
 std::cerr << "Change Property Event" << std::endl;
-::memset(&event,0,sizeof(event));
+std::memset(&event,0,sizeof(event));
 event.u.u.type = 28;
 event.u.u.sequenceNumber = sequenceNum;
 event.u.property.window = ptr -> window;
@@ -644,7 +649,7 @@ void convertSelection(xConvertSelectionReq *ptr)
 xEvent event;
 
 std::cerr << "Selection Notify Event" << std::endl;
-::memset(&event,0,sizeof(event));
+std::memset(&event,0,sizeof(event));
 event.u.u.type = 31;
 event.u.u.sequenceNumber = sequenceNum;
 event.u.selectionNotify.time = 0;       // Current Time
@@ -695,14 +700,14 @@ xQueryExtensionReply reply;
 char extension[120];
 
 // Get extension
-::memset(extension,0,sizeof(extension));
+std::memset(extension,0,sizeof(extension));
 ::strncpy(extension,(char *) ptr + sizeof(xQueryExtensionReq),ptr -> nbytes);
 
 std::cerr << "Query Extension : " << extension << std::endl;
 
 // Reply Not supported
 std::cerr << "****** Reply : Not supported" << std::endl;
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 // None  present = 0;
 reply.present = 0;
@@ -715,7 +720,7 @@ void getSelectionOwner(xResourceReq *ptr)
 xGetSelectionOwnerReply reply;
 
 std::cerr << "Get Selection Owener Reply " << std::endl;
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
@@ -727,7 +732,7 @@ xQueryColorsReply reply;
 xrgb rgb;
 
 std::cerr << "Query Colors" << std::endl;
-::memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 4;
@@ -758,7 +763,7 @@ void allocColor(xAllocColorReq *ptr)
           << std::endl;
           
     // Do the actual Alloc at the Server
-    ::memset(&xcolour,0,sizeof(xcolour));
+    std::memset(&xcolour,0,sizeof(xcolour));
     xcolour.red   = ptr -> red;
     xcolour.green = ptr -> green;
     xcolour.blue  = ptr -> blue;
@@ -767,7 +772,7 @@ void allocColor(xAllocColorReq *ptr)
        std::cerr << "XAllocColor failed" << std::endl;
        
     // Send the Reply
-    ::memset(&reply,0,sizeof(reply));
+    std::memset(&reply,0,sizeof(reply));
 	reply.type = 1;
 	reply.sequenceNumber = sequenceNum;
 	reply.length = 0;
@@ -795,14 +800,14 @@ void allocNamedColor(xAllocNamedColorReq *ptr)
           << std::endl;
           
     // Do the actual AllocName at the Server
-    ::memset(&screenColour,0,sizeof(screenColour));
-    ::memset(&exactColour,0,sizeof(exactColour));
+    std::memset(&screenColour,0,sizeof(screenColour));
+    std::memset(&exactColour,0,sizeof(exactColour));
     status = XAllocNamedColor(display,ptr -> cmap,name,&screenColour,&exactColour);          
     if (status == 0 )
        std::cerr << "XAllocNamedColor failed" << std::endl;
        
     // Send the Reply
-    ::memset(&reply,0,sizeof(reply));
+    std::memset(&reply,0,sizeof(reply));
 	reply.type = 1;
 	reply.sequenceNumber = sequenceNum;
 	reply.length 		 = 0;
@@ -922,7 +927,7 @@ void destroyWindow(xResourceReq *ptr)
 xEvent event;
 
 std::cerr << "Destroy Notify Event" << std::endl;
-::memset(&event,0,sizeof(event));
+std::memset(&event,0,sizeof(event));
 event.u.u.type = 28;
 event.u.u.sequenceNumber = sequenceNum;
 event.u.destroyNotify.event = ptr -> id;
@@ -985,7 +990,7 @@ void getKeyboardMapping(xGetKeyboardMappingReq *ptr)
 xGetKeyboardMappingReply reply;
 
 std::cerr << "Get Keyboard Mapping" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 if ( ptr -> count <= 133 )
    {
    reply.type = 1;
@@ -1007,7 +1012,7 @@ void getKeyboardControl(xResourceReq *ptr)
 xGetKeyboardControlReply reply;
 
 std::cerr << "Get Keyboard Control" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.globalAutoRepeat = 0;
 reply.sequenceNumber = sequenceNum;
@@ -1028,7 +1033,7 @@ char mods[16] = { 0x34, 0x41, 0x26, 0x00, 0x42, 0x48, 0x44, 0x00,
                   0x46, 0x8d, 0x00, 0x00, 0x00, 0x00, 0x62, 0x00 };
 
 std::cerr << "Get Modifier Mapping" << std::endl;
-::memset((char *) &reply,0,sizeof(reply));
+std::memset((char *) &reply,0,sizeof(reply));
 reply.type = 1;
 reply.numKeyPerModifier = 2;
 reply.sequenceNumber = sequenceNum;
@@ -1042,7 +1047,7 @@ void grabKeyboard(xGrabKeyboardReq *ptr)
 xGrabKeyboardReply reply;
 
 std::cerr << "Grab Keyboard" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.status = 0;
 reply.sequenceNumber = sequenceNum;
@@ -1055,7 +1060,7 @@ void getInputFocus()
 xGetInputFocusReply reply;
 
 std::cerr << "Get Input Focus" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
@@ -1067,7 +1072,7 @@ void getScreenSaver(xResourceReq *ptr)
 xGetScreenSaverReply reply;
 
 std::cerr << "Get Screen Saver" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
@@ -1079,7 +1084,7 @@ void getPointerControl(xResourceReq *ptr)
 xGetPointerControlReply reply;
 
 std::cerr << "Get Pointer Control" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
@@ -1094,7 +1099,7 @@ void queryBestSize(xQueryBestSizeReq *ptr)
 xQueryBestSizeReply reply;
 
 std::cerr << "Query Best Size" << std::endl;
-memset(&reply,0,sizeof(reply));
+std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
@@ -1179,9 +1184,9 @@ void reportRequest(int type)
            std::cerr << "X_QueryExtension" << std::endl;
            break;
 
-	  case X_QueryColors :
-		   std::cerr << "X_QueryColors" << std::endl;
-		   break;
+      case X_QueryColors :
+	   std::cerr << "X_QueryColors" << std::endl;
+	   break;
 
       case X_CreatePixmap :
            std::cerr << "X_CreatePixMap" << std::endl;
@@ -1459,9 +1464,9 @@ while ( len > 0 )       // Need to change to while bytes available
            queryExtension((xQueryExtensionReq *) &requestBuff);
            break;
 
-	 case X_GetInputFocus :
-	 	  getInputFocus();
-	 	  break;
+      case X_GetInputFocus :
+	   getInputFocus();
+	   break;
 	 	  
 //      case X_QueryColors :
 //           queryColors((xQueryColorsReq *) &requestBuff);
@@ -1503,13 +1508,13 @@ while ( len > 0 )       // Need to change to while bytes available
       //************************************************//
       //  Deal with and need to forward                 //
       //************************************************//
-	  case X_AllocColor :
-	  	   allocColor((xAllocColorReq *) &requestBuff);
-	  	   break;
+      case X_AllocColor :
+	   allocColor((xAllocColorReq *) &requestBuff);
+	   break;
 	  	   
-	  case X_AllocNamedColor :
-	  	   allocNamedColor((xAllocNamedColorReq *) &requestBuff);
-	  	   break;
+      case X_AllocNamedColor :
+	   allocNamedColor((xAllocNamedColorReq *) &requestBuff);
+	   break;
 	  	   
       case X_CreateWindow :
            createWindow((xCreateWindowReq *) &requestBuff);
@@ -1532,9 +1537,9 @@ while ( len > 0 )       // Need to change to while bytes available
            createPixmap(( xCreatePixmapReq *) &requestBuff);
            break;
 
-	  case X_FreePixmap :
-		   freePixmap(&requestBuff.req);
-		   break;
+      case X_FreePixmap :
+	   freePixmap(&requestBuff.req);
+	   break;
       //************************************************//
       //  forward - Reply expected                      //
       //************************************************//
@@ -1561,35 +1566,40 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_PutImage :
       case X_SetClipRectangles :
            std::cerr << "Forward with WinID " << requestBuff.req.id << std::endl;
-           // ::printf("WinID %x",requestBuff.req.id);
-
            // requestBuff.req.id = checkJavaWid(requestBuff.req.id);
            requestBuff.req.id = rootWin -> JavaWid(requestBuff.req.id);
-           std::cerr << " Java Id " << requestBuff.req.id << std::endl;
-           if ( requestBuff.req.id < 0 ) exit(2);
-           std::cerr << "Send to java : " << len << std::endl;
-           Xwindow::javasock -> write((char *) &requestBuff,len);
+           if ( requestBuff.req.id > 0 ) 
+              {
+              std::cerr << " --> Java Id " << requestBuff.req.id << std::endl;
+              std::cerr << "Send to java : " << len << std::endl;
+              Xwindow::javasock -> write((char *) &requestBuff,len);
+	      }
+           else
+              std::cerr << "Window Not Found" << std::endl;
            break;
-
       //************************************************//
       //  forward with changed source and dest window   //
       //************************************************//
       case X_CopyPlane :
       case X_CopyArea :
            requestBuff.req.id = rootWin -> JavaWid(requestBuff.req.id);
-           std::cerr << "Java Id " << requestBuff.req.id << std::endl;
-           // requestBuff.data[0] = checkJavaWid(requestBuff.data[0]);
            requestBuff.data[0] = rootWin -> JavaWid(requestBuff.data[0]);
-           if ( requestBuff.req.id < 0 ) exit(2);
-           std::cerr << "Send to java : " << len << std::endl;
-           Xwindow::javasock -> write((char *) &requestBuff,len);
+           if ( requestBuff.req.id > 0 && requestBuff.data[0] > 0 ) 
+              {
+              std::cerr << "--> Java Id " << requestBuff.req.id << std::endl;
+              // requestBuff.data[0] = checkJavaWid(requestBuff.data[0]);
+              std::cerr << "Send to java : " << len << std::endl;
+              Xwindow::javasock -> write((char *) &requestBuff,len);
+	      }
+           else
+              std::cerr << "Window Not Found" << std::endl;
            break;
-
       //************************************************//
       //  Ignore for Now                                //
       //************************************************//
 
-			      
+      //case X_SetClipRectangles :
+	   			      
       case X_FreeGC :
       case X_CreateGlyphCursor :
       case X_ChangeGC :
@@ -1600,9 +1610,9 @@ while ( len > 0 )       // Need to change to while bytes available
       //  forward no reply                              //
       //************************************************//
       case X_CreateGC :
-			std::cerr << "Create GC" << std::endl;
-			Xwindow::javasock -> write((char *) &requestBuff,len);
-			break;
+	   std::cerr << "Create GC" << std::endl;
+	   Xwindow::javasock -> write((char *) &requestBuff,len);
+	   break;
 			
       default :
 #ifdef DEBUG
@@ -1619,10 +1629,10 @@ return(1);
 
 void closeDownClient(void)
 {
-	std::cerr << "Close Down X Client" << std::endl;
-	// Java Client has gone away
-	// Close session with Xserver
-	XCloseDisplay(display);
+    std::cerr << "Close Down X Client" << std::endl;
+    // Java Client has gone away
+    // Close session with Xserver
+    XCloseDisplay(display);
     // Close java socket
     std::cerr << "Close Java Socket" << std::endl;
     Xwindow::javasock -> close();
@@ -1636,12 +1646,12 @@ void closeDownClient(void)
     exit(0);
 }
 //////////////////////////////////
-// Process Replies		        //
+// Process Replies	        //
 //------------------------------//
-// Returns 			            //
+// Returns 	                //
 //     n  - Number processed	//
-//     0  - End of File		    //
-//    -ve - Error		        //
+//     0  - End of File	        //
+//    -ve - Error		//
 //////////////////////////////////
 int processReplies(void)
 {
@@ -1661,7 +1671,7 @@ struct
 
 std::cerr << "Process Replies" << std::endl;
 
-::memset(&buff,0,32);
+std::memset(&buff,0,32);
 if (( len =  Xwindow::javasock -> readBlock((char *) &buff,32)) != 32 )
    {
    if ( len == 0 )
@@ -1902,7 +1912,7 @@ int execClient(char *command)
 ::sleep(2);               // sleep for 2 secs
 // Execute command to run X client
 std::cerr << "execl : " << command << std::endl;
-if ( ::execlp(command,command,0) < 0 )
+if ( ::execlp(command,command,NULL) < 0 )
    {
    std::cerr << "Error execing application - errno < " 
         << errno << " > " << strerror(errno) << std::endl;
@@ -1973,7 +1983,7 @@ while ( errFlag == 0 )
    std::cerr << "Accepting java Server" << std::endl;
    Xwindow::javasock  = new tcpSocket(javaServ-> accept());
    std::cerr << "Reading required X Client Application" << std::endl;
-   memset(command,0,120);	
+   std::memset(command,0,120);	
    readCommand(command);
    std::cerr << "Command Read : " << command << std::endl;
    std::cerr << "Main Forking" << std::endl;
@@ -1987,7 +1997,7 @@ while ( errFlag == 0 )
       // Close main java socket
       javaServ -> close();
       std::cerr << "Forking for X Client" << std::endl;
-   	  if ((setupPid = ::fork()) < 0 ) // Fork and check okay
+      if ((setupPid = ::fork()) < 0 ) // Fork and check okay
       	 {
          std::cerr << "Fork failed for X Client : " << errno << std::endl;
          return(-1);
@@ -1998,7 +2008,7 @@ while ( errFlag == 0 )
          Xwindow::javasock -> close();
       	 // Xwindow::javasock -> close();
       	 // Export appropriate DISPLAY variable
-		 exportDisplay(dispNum);
+	 exportDisplay(dispNum);
          execClient(command);
          }
       else // Accept data from X11 Client and process

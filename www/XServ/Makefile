@@ -1,5 +1,5 @@
 JAVAC=javac
-JFLAGS=-Xlint:deprecation -Xlint:unchecked
+FLAGS=-Xlint
 sources = $(wildcard *.java)
 classes = $(sources:.java=.class)
 

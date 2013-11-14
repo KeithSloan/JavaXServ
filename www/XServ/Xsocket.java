@@ -108,7 +108,7 @@ public class Xsocket
     public boolean open(String host, int port)
       {
       trace.Entry(0x02,"open port host: "+host+" port : "+port);
-      buffer = new byte[1024];
+      buffer = new byte[4096];
       sp = new SocketPermission(host+":" + port, "connect");
 
       try
