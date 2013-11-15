@@ -1,12 +1,12 @@
-JAVAC=javac
+JAVA=javac
 FLAGS=-Xlint
 sources = $(wildcard *.java)
-classes = $(sources:.java=.class)
+clases = $(sources:.java=.class)
 
 all: $(classes)
 
 clean :
 	rm -f *.class
 
-%.class : %.java
-	$(JAVAC) $(FLAGS) $<
+%.java : %.class
+	$(JAVA) $(FLAGS) $<

@@ -1,4 +1,5 @@
 *.class
+*.o
 trace*
 traces
 DevelopmentNotes
