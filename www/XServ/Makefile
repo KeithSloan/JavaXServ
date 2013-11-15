@@ -1,5 +1,5 @@
 JAVA=javac
-FLAGS=-Xlint
+FLAGS=-Xlint 
 sources = $(wildcard *.java)
 classes = $(sources:.java=.class)
 
