@@ -499,7 +499,7 @@ public int action()
    int gc;
    int shape,m,delta;
    int cx,cy,x,y,h,w,a1,a2;
-   int i,p,b,d;
+   int i,p,b,d,mask,n,v;
    int xArray[] = new int[1024];
    int yArray[] = new int[1024];
    byte textBuff[] = new byte[257];
@@ -544,16 +544,26 @@ public int action()
 
       case 12 :	// Config Window
 	  i = sock.readCard32();
+	  Trail("Config window : "+i);
 	  p = Windows[i].parentIndex();
-          Trail("Config window : "+i);
-          if ( p == 0 )
-             {
-             System.out.println("Config Frame");
-             }
-          else if ( Windows[i].configWindow() == true )
-             {
-             Windows[p].resetChild(Windows[i]);
-	     }
+          mask = sock.readCard16();
+	  Trail("Mask : "+mask);
+	  sock.readCard16(); // Read unused
+	  // Need to add code to deal with values
+	  Trail("Number of items : "+(wordLen - 3));
+	  for (n=wordLen - 3; n > 0 ; n--)
+	      {
+	      v = sock.readCard32();
+	      Trail("Read Value : "+v);
+	      }
+     //     if ( p == 0 )
+     //       {
+     //        System.out.println("Config Frame");
+     //        }
+     //     else if ( Windows[i].configWindow() == true )
+     //        {
+     //        Windows[p].resetChild(Windows[i]);
+     //	       }
           break;
 
       case  16 :

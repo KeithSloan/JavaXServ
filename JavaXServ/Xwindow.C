@@ -318,6 +318,8 @@ if ( type == 0 && mapState != 2 )
       event.u.expose.height = height;
       X11sock -> write((char *) &event,sizeof(event));
       }
+   else
+      std::cerr << "Expose Mask not set in EventMask" << std::endl;
    }
 }
 
@@ -412,13 +414,18 @@ std::cerr << "Send Change Window Notify Event" << std::endl;
 //------------------------------------------------------//
 void Xwindow::MapWindow(int pstate,int num)
 {
-std::cerr << "Map Window : " << windowId << " Parent State " << pstate << std::endl;
+std::cerr << "Map Window : " << windowId << " mapstate : " << mapState << " Parent State " << pstate << std::endl;
 if ( mapState == 2 ) return;
 if (( eventMask & StructureNotifyMask ) == StructureNotifyMask )
+   {
+   std::cerr << "Notify Mapped : " << num << std::endl;
    NotifyMapped(windowId,num);
-if (( parent -> eventMask & SubstructureNotifyMask ) 
-                                      == SubstructureNotifyMask )
+   }
+if (( parent -> eventMask & SubstructureNotifyMask ) == SubstructureNotifyMask )
+   {
+   std::cerr << "Notify Parent : " << parent -> windowId << std::endl;
    NotifyMapped(parent -> windowId,num);
+   }
 if ( pstate == 2 )
    {
    expose(num);
@@ -483,6 +490,8 @@ if ( firstSub != NULL )
       ptr = ptr -> levelNext;
       }
    }
+else
+   std::cerr << "No Sub Windows to expose" << std::endl;
 }
 
 //------------------------------------------------------//

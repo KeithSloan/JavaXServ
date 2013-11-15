@@ -752,11 +752,11 @@ Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
 
 void allocColor(xAllocColorReq *ptr)
 {
-	Status status;
-	XColor xcolour;
+    Status status;
+    XColor xcolour;
     xAllocColorReply reply;
     	
-	std::cerr << "AllocColor - ColorMap :" << ptr -> cmap
+    std::cerr << "AllocColor - ColorMap :" << ptr -> cmap
           << " Red   : " << ptr -> red
           << " Green : " << ptr -> green
           << " Blue  : " << ptr -> blue
@@ -773,9 +773,9 @@ void allocColor(xAllocColorReq *ptr)
        
     // Send the Reply
     std::memset(&reply,0,sizeof(reply));
-	reply.type = 1;
-	reply.sequenceNumber = sequenceNum;
-	reply.length = 0;
+    reply.type = 1;
+    reply.sequenceNumber = sequenceNum;
+    reply.length = 0;
     reply.red    = xcolour.red;
     reply.green  = xcolour.green;
     reply.blue   = xcolour.blue;
@@ -786,19 +786,14 @@ void allocColor(xAllocColorReq *ptr)
 }
 void allocNamedColor(xAllocNamedColorReq *ptr)
 {
-	Status status;
-	XColor screenColour;
-	XColor exactColour; 
-	char name[MAXFONTNAME];
-    xAllocNamedColorReply reply;
-    
-    strncpy(name,(char *) ptr + sizeof(xAllocNamedColorReq),ptr -> nbytes);
+    Status status;
+    XColor screenColour;
+    XColor exactColour; 
+    char name[MAXFONTNAME];
+    xAllocNamedColorReply reply;    
+    ::strncpy(name,(char *) ptr + sizeof(xAllocNamedColorReq),ptr -> nbytes);
     name[ptr -> nbytes] = NULL;
-	    	
-	std::cerr << "AllocNamedColor : " << name
-          << " ColorMap :" << ptr -> cmap
-          << std::endl;
-          
+    std::cerr << "AllocNamedColor : " << name << " ColorMap :" << ptr -> cmap << std::endl;
     // Do the actual AllocName at the Server
     std::memset(&screenColour,0,sizeof(screenColour));
     std::memset(&exactColour,0,sizeof(exactColour));
@@ -808,10 +803,10 @@ void allocNamedColor(xAllocNamedColorReq *ptr)
        
     // Send the Reply
     std::memset(&reply,0,sizeof(reply));
-	reply.type = 1;
-	reply.sequenceNumber = sequenceNum;
-	reply.length 		 = 0;
-	reply.pixel       = exactColour.pixel;
+    reply.type = 1;
+    reply.sequenceNumber = sequenceNum;
+    reply.length 	 = 0;
+    reply.pixel       = exactColour.pixel;
     reply.exactRed    = exactColour.red;
     reply.exactGreen  = exactColour.green;
     reply.exactBlue   = exactColour.blue;
@@ -823,8 +818,34 @@ void allocNamedColor(xAllocNamedColorReq *ptr)
     // Add code to send to java if not a direct colour     
 }
 
+void lookupColor(xLookupColorReq *ptr)
+{
+    Status status;
+    xLookupColorReply reply;
+    XColor returnColour,screenColour;
+    char name[MAXFONTNAME];
+    ::strncpy(name,(char *) ptr + sizeof(xLookupColorReq),ptr -> nbytes);
+    name[ptr -> nbytes] = NULL;
+    std::cerr << "LookupColor : " << name << " ColorMap :" << ptr -> cmap << std::endl;
 
+    status = XLookupColor(display,ptr -> cmap,name,&returnColour,&screenColour);          
+    if (status == 0 )
+       std::cerr << "XLookupColor failed" << std::endl;
 
+    // Send the Reply
+    std::memset(&reply,0,sizeof(reply));
+    reply.type = 1;
+    reply.sequenceNumber = sequenceNum;
+    reply.length 	 = 0;
+    reply.exactRed    = returnColour.red;
+    reply.exactGreen  = returnColour.green;
+    reply.exactBlue   = returnColour.blue;
+    reply.screenRed   = screenColour.red;
+    reply.screenGreen = screenColour.green;
+    reply.screenBlue  = screenColour.blue;
+    Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+    // Add code to send to java if not a direct colour  
+}
 
 void createWindow(xCreateWindowReq *ptr)
 {
@@ -1323,6 +1344,10 @@ void reportRequest(int type)
       case X_ChangeGC :
            std::cerr << "X_ChangeGC" << std::endl;
            break;
+
+      case X_LookupColor :
+	   std::cerr << "X_LookupColor" << std::endl;
+	   break;
            
       case 129 :     // Shape extension
            std::cerr << "X_ShapeExtension" << std::endl;
@@ -1467,11 +1492,22 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_GetInputFocus :
 	   getInputFocus();
 	   break;
+
+      case X_AllocColor :			// Deal with colour locally pass to gc 24bit colour
+	   allocColor((xAllocColorReq *) &requestBuff);
+	   break;
+	  	   
+      case X_AllocNamedColor :			// Deal with colour locally pass to gc 24bit colour
+	   allocNamedColor((xAllocNamedColorReq *) &requestBuff);
+	   break;
 	 	  
 //      case X_QueryColors :
 //           queryColors((xQueryColorsReq *) &requestBuff);
 //           break;
 
+      case X_LookupColor :			// Deal with colour locally pass to gc 24bit colour
+          lookupColor((xLookupColorReq *) &requestBuff);
+	  break;	
 
       case X_GetSelectionOwner :
            getSelectionOwner((xResourceReq *) &requestBuff);
@@ -1508,14 +1544,6 @@ while ( len > 0 )       // Need to change to while bytes available
       //************************************************//
       //  Deal with and need to forward                 //
       //************************************************//
-      case X_AllocColor :
-	   allocColor((xAllocColorReq *) &requestBuff);
-	   break;
-	  	   
-      case X_AllocNamedColor :
-	   allocNamedColor((xAllocNamedColorReq *) &requestBuff);
-	   break;
-	  	   
       case X_CreateWindow :
            createWindow((xCreateWindowReq *) &requestBuff);
            break;
