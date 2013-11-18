@@ -33,7 +33,7 @@ class SockSet
    private:
        fd_set    readMask;
        int       maxfd;
-
+       
    public:
 		SockSet(void);
         ~SockSet(void);
@@ -52,6 +52,7 @@ class tcpSocket
 	socklen_t clientLen;
 	char      Xbuffer[2048];
         int       isrtPoint;
+	int       exposeMapCount;
         friend    void SockSet::addReadMask(tcpSocket *);
         friend    int  SockSet::isset(tcpSocket *);
 
@@ -64,16 +65,21 @@ class tcpSocket
 	void listen(int num);
 	int  accept(void);
 	int  read(char *buffer,int len);
-    int  readBlock(char *buffer,int len);
-    void put(char *ptr,int len); 
-    void putByte(int b);
+        int  readBlock(char *buffer,int len);
+        void put(char *ptr,int len); 
+        void putByte(int b);
+        void putInt(int v);
 	void assert(void);
-    void flush(void);
+        void reset(void);
+        void flush(void);
 	int  write(char *buffer,int len);
-    int  getClientAddr(void);
+        int  getClientAddr(void);
  	int  getServerAddr(void);
-    void error(int err,char *msg);
+        void error(int err,char *msg);
 	int  getError(void);
 	void close(void);
+        void putExposeMapHeader(void);
+        void flushExposeMapHeader(void);
+        void addWindowToExposeMap(int w);
    };
 #endif

@@ -659,14 +659,14 @@ if ( winptr != NULL )
    {
    std::cerr << "Get ParentMapStat" << std::endl;
    pstate = winptr -> ParentMapState();
+   Xwindow::javasock -> putExposeMapHeader();
    std::cerr << "Now Map the Window parent state :" << pstate << std::endl;
    winptr -> MapWindow(pstate,sequenceNum);
    if ( pstate == 2 )
       {
-      winptr -> SendJavaMapInitial();
       winptr -> exposePendingSubWindows(sequenceNum);
-      winptr -> SendJavaMapFlush();
       }
+   Xwindow::javasock -> flushExposeMapHeader();
    }
   
 }
@@ -685,9 +685,9 @@ Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 std::cerr << "Map SubWindows" << std::endl;
 if ( winptr != NULL )
    {
-   winptr -> SendJavaMapInitial();
+   Xwindow::javasock -> putExposeMapHeader();
    winptr -> MapSubWindows(sequenceNum);
-   winptr -> SendJavaMapFlush();
+   Xwindow::javasock -> flushExposeMapHeader();
    }
 }
 

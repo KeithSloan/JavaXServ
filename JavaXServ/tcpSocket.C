@@ -179,6 +179,17 @@ if ( len > 0 )
    }
 }
 
+void tcpSocket::putInt(int v)
+{
+::memcpy(&Xbuffer[isrtPoint],&v,4);
+isrtPoint += 4;
+if ( isrtPoint == 2048 )
+   {
+   write(Xbuffer,2048);
+   isrtPoint = 0;
+   }
+}
+
 void tcpSocket::putByte(int b)
 {
 Xbuffer[isrtPoint++] = b;
@@ -199,9 +210,14 @@ void tcpSocket::assert(void)
 {
 if ( isrtPoint != 0 )
    {
-   std::cerr << "Buffer pointer not zero - missing flush ?" << std::endl;
+   std::cerr << "Buffer pointer not zero - missing flush ?" << isrtPoint << std::endl;
    exit(2);
    }
+}
+
+void tcpSocket::reset(void)
+{
+isrtPoint = 0;
 }
 
 int tcpSocket::write(char *buffer,int len)
@@ -249,4 +265,33 @@ void tcpSocket::error(int err,char *msg)
 {
 std::cerr << msg << " : " << err << std::endl;
 exit(3);
+}
+
+void tcpSocket::putExposeMapHeader()
+{
+exposeMapCount = 0;
+assert();
+putByte(8);		// opcode X_MapWindow = 8
+putByte(0);		// parm
+putByte(0);		// Dummy length
+putByte(0);
+}
+
+void tcpSocket::flushExposeMapHeader()
+{
+if ( exposeMapCount > 0 )
+   {
+   addWindowToExposeMap(0);        // End of Windows marker
+   flush();
+   }
+else
+   reset();
+}
+
+
+void tcpSocket::addWindowToExposeMap(int w)
+{
+std::cerr << "Window Added to Send : " << w << std::endl;
+putInt(w);
+exposeMapCount++;
 }

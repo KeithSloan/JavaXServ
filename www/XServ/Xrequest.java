@@ -541,6 +541,15 @@ public int action()
           Windows[i].destroy();
           break;
 
+      case 8 : // Map Window
+          Trail("Expose/Map Window request");
+	  do
+             {
+             jw = sock.readCard32();
+	     Trail("Map Window : "+jw);
+             } while ( jw != 0 );
+          break;
+
       case 12 :	// Config Window
 	  i = sock.readCard32();
 	  Trail("Config window : "+i);
@@ -715,11 +724,11 @@ public int action()
           //Windows[jw].repaint();
 	  break;
 
-      case 66 : 	// Line segment
+      case 66 : 	// PolySegment
     	  jw = sock.readCard32();
           gc = sock.readCard32();
           count = (wordLen - 3) >> 1;
-	  Trail("Segment - Window : "+jw+" : "+count);
+	  Trail("PolySegment - Window : "+jw+" : "+count);
 	  i = 0;
           gp = Windows[jw].getGraphics();
           Trail("Graphic "+gp);

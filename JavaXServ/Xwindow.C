@@ -313,19 +313,22 @@ void printHex2(int value)
 }
 
 //------------------------------------------------------//
-// Expose dependant on current state        		//
+// Expose 			        		//
 //------------------------------------------------------//
 void Xwindow::expose(int num)
 {
 xEvent event;
+int jw;
 
 // Don't think expose depends on mapstate set xclock trace only expose mask
 //if ( type == 0 && mapState != 2 )
 //   {
    std::cerr << "Expose : Window " << windowId << std::endl;
    printHex2(eventMask);
-   exposeCount++;  // Do we tell Java even if ExposureMask not set ??
-   // if ( javaId == -1 ) CreateJavaWin();
+   jw = JavaWid(windowId);
+   // Do we tell Java even if ExposureMask not set ??
+   std::cerr << "Send to Java Map window : " << jw << std::endl;
+   javasock -> addWindowToExposeMap(jw);
    if (( eventMask & ExposureMask) == ExposureMask)
       {
       mapState = 2;
@@ -432,19 +435,6 @@ event.u.configureNotify.width = width;
 event.u.configureNotify.height = height;
 X11sock -> write((char *) &event,sizeof(event));
 std::cerr << "Send Change Window Notify Event" << std::endl;
-}
-
-void Xwindow::SendJavaMapInitial()
-{
-// Add Send to Java Map request to buffer
-exposeCount = 0;
-std::cerr << "Send Java Map Initial" << std::endl;
-}
-
-void Xwindow::SendJavaMapFlush()
-{
-// Need to add last window indicator and flush buffer
-std::cerr << "Send Java Map Flush - Count : " << exposeCount << std::endl;
 }
 
 //------------------------------------------------------//
