@@ -46,6 +46,7 @@ class Xwindow
       int     height,width;
       int     depth,border;
       int     colourMap;
+      int     exposeCount;
 
       void NotifyMapped(int ewid,int num);
 
@@ -73,6 +74,8 @@ class Xwindow
        void    expose(int num);
        void    exposeMust(int x, int y, int w, int h,int num);
        void    exposePendingSubWindows(int num);
+       void    SendJavaMapInitial();
+       void    SendJavaMapFlush();
        void    MapWindow(int state,int num);
        void    UnMapWindow(void);
        void    MapSubWindows(int num);

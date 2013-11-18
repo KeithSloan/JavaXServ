@@ -306,6 +306,12 @@ createPixmap.depth	  = depth;
 javasock -> write((char *) &createPixmap,sizeof(createPixmap));
 }
 
+
+void printHex2(int value)
+{
+::printf("0x%08x\n",value);
+}
+
 //------------------------------------------------------//
 // Expose dependant on current state        		//
 //------------------------------------------------------//
@@ -313,9 +319,12 @@ void Xwindow::expose(int num)
 {
 xEvent event;
 
-if ( type == 0 && mapState != 2 )
-   {
+// Don't think expose depends on mapstate set xclock trace only expose mask
+//if ( type == 0 && mapState != 2 )
+//   {
    std::cerr << "Expose : Window " << windowId << std::endl;
+   printHex2(eventMask);
+   exposeCount++;  // Do we tell Java even if ExposureMask not set ??
    // if ( javaId == -1 ) CreateJavaWin();
    if (( eventMask & ExposureMask) == ExposureMask)
       {
@@ -335,7 +344,7 @@ if ( type == 0 && mapState != 2 )
       }
    else
       std::cerr << "Expose Mask not set in EventMask" << std::endl;
-   }
+//   }
 }
 
 //------------------------------------------------------//
@@ -425,13 +434,26 @@ X11sock -> write((char *) &event,sizeof(event));
 std::cerr << "Send Change Window Notify Event" << std::endl;
 }
 
+void Xwindow::SendJavaMapInitial()
+{
+// Add Send to Java Map request to buffer
+exposeCount = 0;
+std::cerr << "Send Java Map Initial" << std::endl;
+}
+
+void Xwindow::SendJavaMapFlush()
+{
+// Need to add last window indicator and flush buffer
+std::cerr << "Send Java Map Flush - Count : " << exposeCount << std::endl;
+}
+
 //------------------------------------------------------//
 // Map Window 						//
 //------------------------------------------------------//
 void Xwindow::MapWindow(int pstate,int num)
 {
 std::cerr << "Map Window : " << windowId << " mapstate : " << mapState << " Parent State " << pstate << std::endl;
-if ( mapState == 2 ) return;
+if ( mapState == 2 ) return;  // If already mapped do nothing
 if (( eventMask & StructureNotifyMask ) == StructureNotifyMask )
    {
    std::cerr << "Notify Mapped : " << num << std::endl;
@@ -442,14 +464,14 @@ if (( parent -> eventMask & SubstructureNotifyMask ) == SubstructureNotifyMask )
    std::cerr << "Notify Parent : " << parent -> windowId << std::endl;
    NotifyMapped(parent -> windowId,num);
    }
-if ( pstate == 2 )
+if ( pstate == 2 ) // If parent mapped expose and change state to mapped
    {
    expose(num);
    mapState = 2;
    }
 else
    {
-   mapState = 1;
+   mapState = 1; // Set mapped state to pending
    }
 }
 
@@ -466,9 +488,11 @@ mapState = 0;
 //------------------------------------------------------//
 void Xwindow::MapSubWindows(int num)
 {
+int count;
 Xwindow *ptr;
 
-std::cerr << "Map Sub Windows : " << windowId << std::endl; 
+std::cerr << "Map Sub Windows : " << windowId << std::endl;
+count = 0; 
 if ( firstSub != NULL )
    {
    ptr = firstSub;
@@ -500,6 +524,7 @@ if ( firstSub != NULL )
       {
       if ( ptr -> mapState == 1 )
          {
+         // add to Send to Java
          ptr -> expose(num);
          }
       ptr -> exposePendingSubWindows(num);

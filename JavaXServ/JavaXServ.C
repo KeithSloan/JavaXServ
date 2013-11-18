@@ -651,7 +651,7 @@ std::cerr << "Send Change Property Event" << std::endl;
 
 void mapWindow(xResourceReq *ptr)
 {
-int pstate;
+int pstate,count;
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 
 std::cerr << "Map Window : " << ptr -> id << std::endl;
@@ -662,8 +662,13 @@ if ( winptr != NULL )
    std::cerr << "Now Map the Window parent state :" << pstate << std::endl;
    winptr -> MapWindow(pstate,sequenceNum);
    if ( pstate == 2 )
+      {
+      winptr -> SendJavaMapInitial();
       winptr -> exposePendingSubWindows(sequenceNum);
+      winptr -> SendJavaMapFlush();
+      }
    }
+  
 }
 
 void unMapWindow(xResourceReq *ptr)
@@ -674,11 +679,16 @@ winptr -> UnMapWindow();
 
 void mapSubwindows(xResourceReq *ptr)
 {
+int count;
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 
 std::cerr << "Map SubWindows" << std::endl;
 if ( winptr != NULL )
+   {
+   winptr -> SendJavaMapInitial();
    winptr -> MapSubWindows(sequenceNum);
+   winptr -> SendJavaMapFlush();
+   }
 }
 
 
@@ -868,13 +878,13 @@ if (( mask & CWColormap ) == CWColormap )
    value = getValueMask(mask,ptr,13);
    std::cerr << "Colour Mask : ";
    printHex(value);
-   winptr -> setEventMask(value);
+   winptr -> setColourMap(value);
    }
 }
 
 void createWindow(xCreateWindowReq *ptr)
 {
-Xwindow *winptr;
+Xwindow *winptr, *parentPtr;
 int     mask;
 std::cerr << "Create X11 window : " << ptr -> wid
           << " parent : " << ptr -> parent
@@ -882,9 +892,10 @@ std::cerr << "Create X11 window : " << ptr -> wid
 // ::printf("WID(hex) : %x Parent %x \n",ptr -> wid,ptr -> parent);
 
 mask = ptr-> mask;
-if ((winptr = rootWin -> AddressWin(ptr -> parent)) != 0 )
+if ((parentPtr = rootWin -> AddressWin(ptr -> parent)) != 0 )
    {
-   (winptr -> CreateSubWindow(ptr -> wid,ptr -> x,ptr -> y,ptr -> width,ptr -> height,ptr -> depth,ptr -> borderWidth)) -> CreateJavaWin();
+   winptr = parentPtr -> CreateSubWindow(ptr -> wid,ptr -> x,ptr -> y,ptr -> width,ptr -> height,ptr -> depth,ptr -> borderWidth); 
+   winptr -> CreateJavaWin();
    processWindowMask(winptr,mask,(char *) ptr + sizeof(xCreateWindowReq));
    }
 else
@@ -1475,18 +1486,6 @@ while ( len > 0 )       // Need to change to while bytes available
            changeProperty((xChangePropertyReq *) &requestBuff);
            break;
 
-      case X_MapWindow :
-           mapWindow((xResourceReq *) &requestBuff);
-           break;
-
-      case X_MapSubwindows :
-           mapSubwindows((xResourceReq *) &requestBuff);
-           break;
-
-      case X_UnmapWindow :
-           unMapWindow((xResourceReq *) &requestBuff);
-           break;
-
       case X_ChangeWindowAttributes :
            changeWindowAttributes((xChangeWindowAttributesReq *) &requestBuff);
            break;
@@ -1590,6 +1589,18 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_FreePixmap :
 	   freePixmap(&requestBuff.req);
 	   break;
+
+      case X_MapWindow :
+           mapWindow((xResourceReq *) &requestBuff);
+           break;
+
+      case X_MapSubwindows :
+           mapSubwindows((xResourceReq *) &requestBuff);
+           break;
+
+      case X_UnmapWindow :
+           unMapWindow((xResourceReq *) &requestBuff);
+           break;
       //************************************************//
       //  forward - Reply expected                      //
       //************************************************//
