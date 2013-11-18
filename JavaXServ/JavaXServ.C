@@ -90,13 +90,18 @@ XFontStruct *fontFix;
 
 void dumpHex(char *ptr,int len)
 {
-	int i;
+int i;
 	
-	for(i=0; i < len; i++)
-	   {
-	   ::printf(" %2x",*ptr++);
-	   }
-	::printf("\n");
+for(i=0; i < len; i++)
+   {
+   ::printf("%02x",*ptr++);
+   }
+::printf("\n");
+}
+
+void printHex(int value)
+{
+::printf("0x%08x\n",value);
 }
 
 void sendReplyHdr(int words )
@@ -116,23 +121,6 @@ reply.length = words - 8;
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-int getEventMask(int mask,int *ptr)
-{
-int i;
-
-if (( mask & 0x800) == 0x800)
-   {
-   for ( i = 0 ; i < 11 ; i++)
-       {
-       if ((mask & 1) == 1)
-          ptr++;
-       mask = mask >> 1;
-       }
-   return(*ptr);
-   }
-return(0);
-}
-
 int initialColourMap()
 {
 	// For now just use the default colourMap
@@ -145,7 +133,6 @@ int initialColourMap()
 	screen = XDefaultScreenOfDisplay(display);
 	return(XDefaultColormapOfScreen(screen));
 }
-
 
 void connectionSetup()
 {
@@ -848,23 +835,57 @@ void lookupColor(xLookupColorReq *ptr)
     // Add code to send to java if not a direct colour  
 }
 
+int getValueMask(int mask,char *ptr,int bitoffset)
+{
+// set X.h for bitoffset values
+int i;
+
+for ( i = 1 ; i < bitoffset ; i++)
+   {
+   if ((mask & 1) == 1)
+      {
+      ptr += 4;
+      }
+   mask = mask >> 1;
+   } 
+return(*((int *) ptr));
+}
+
+void processWindowMask(Xwindow *winptr,int mask,char *ptr)
+{
+int value;
+std::cerr << "Window Mask : ";
+printHex(mask);
+if (( mask & CWEventMask ) == CWEventMask )
+   {
+   value = getValueMask(mask,ptr,11);
+   std::cerr << "Event Mask : ";
+   printHex(value);
+   winptr -> setEventMask(value);
+   }
+if (( mask & CWColormap ) == CWColormap )
+   {
+   value = getValueMask(mask,ptr,13);
+   std::cerr << "Colour Mask : ";
+   printHex(value);
+   winptr -> setEventMask(value);
+   }
+}
+
 void createWindow(xCreateWindowReq *ptr)
 {
 Xwindow *winptr;
-int     i,mask;
+int     mask;
 std::cerr << "Create X11 window : " << ptr -> wid
           << " parent : " << ptr -> parent
           << std::endl;
 // ::printf("WID(hex) : %x Parent %x \n",ptr -> wid,ptr -> parent);
-mask = getEventMask(ptr -> mask,((int *) ptr ) + 8);
-if ((mask & ExposureMask ) == ExposureMask)
-   std::cerr << "Exposure Mask Set" << std::endl;
+
+mask = ptr-> mask;
 if ((winptr = rootWin -> AddressWin(ptr -> parent)) != 0 )
    {
-   (winptr -> CreateSubWindow(ptr -> wid,mask,ptr -> x,ptr -> y,
-                           ptr -> width,ptr -> height,ptr -> depth,
-                           ptr -> borderWidth)) -> CreateJavaWin();
-
+   (winptr -> CreateSubWindow(ptr -> wid,ptr -> x,ptr -> y,ptr -> width,ptr -> height,ptr -> depth,ptr -> borderWidth)) -> CreateJavaWin();
+   processWindowMask(winptr,mask,(char *) ptr + sizeof(xCreateWindowReq));
    }
 else
    {
@@ -913,26 +934,26 @@ void changeWindowAttributes(xChangeWindowAttributesReq *ptr)
 {
 Xwindow *winPtr;
 int     mask;
+
+std::cerr << "Change Window Attributes" << std::endl;
+winPtr = rootWin -> AddressWin(ptr -> window);
+mask = ptr -> valueMask;
+processWindowMask(winPtr,mask,(char *) ptr + sizeof(xChangeWindowAttributesReq));
 //
 //      Send Config Notify Event
 //
-std::cerr << "Change Window Attributes" << std::endl;
-winPtr = rootWin -> AddressWin(ptr -> window);
-mask   = getEventMask(ptr -> valueMask,((int *) ptr) + 3);
-winPtr -> ConfigNotify(mask,sequenceNum);
+winPtr -> ConfigNotify(sequenceNum);
 //
-//      Note More events than this were generated for xclock
+//      Note More events than this were generated for xclock but bugs since
 //
-
+//      Not convined that this needs to Send Expose Event
 //
-//      Send Expose Event
-//
-if (( mask & ExposureMask ) == ExposureMask )
-   {
-   std::cerr << "Change attribute to expose" << std::endl;
-   winPtr -> expose(sequenceNum);
-   winPtr -> exposePendingSubWindows(sequenceNum);
-   }
+//if (( mask & ExposureMask ) == ExposureMask )
+//   {
+//   std::cerr << "Change attribute to expose" << std::endl;
+//   winPtr -> expose(sequenceNum);
+//   winPtr -> exposePendingSubWindows(sequenceNum);
+//   }
 }
 
 void getWindowAttributes(xResourceReq *ptr)
@@ -2102,7 +2123,7 @@ if (( display = ::XOpenDisplay(displayVariable)) == NULL )
    exit(2);
    }
 // Create root window ( same parameters as connection setup
-rootWin = new Xwindow(-1,XDefaultRootWindow(display),NULL,0,0,0,600,800,8,1);
+rootWin = new Xwindow(-1,XDefaultRootWindow(display),NULL,0,0,600,800,8,1);
 if ( ::strstr(argv[0],"ijavaServ" ) == 0 )
    {
    listenProcess(sockNum,dispNum);

@@ -31,11 +31,10 @@ extern "C"              // C includes
 int windowCount;
 
 // Windows are tracked on the Server and sento the Client
-Xwindow::Xwindow(int t, int id, Xwindow *par,int em,int x,int y,int w,int h,int d,int b)
+Xwindow::Xwindow(int t, int id, Xwindow *par,int x,int y,int w,int h,int d,int b)
 // Xwindow constructor
 // t type ( -1 root, 0 window, 1 pixmap)
 // par pointer to parent
-// em exposure mask
 // x,y offsets
 // w,h width, height
 // d,b depth border
@@ -62,7 +61,8 @@ else
 next      = NULL;
 last      = this;
 windowId  = id;
-eventMask = em;
+eventMask = 0;
+colourMap = 0;
 xPos      = x;
 yPos      = y;
 width     = w;
@@ -80,6 +80,21 @@ Xwindow::~Xwindow(void)
 // Need to update pointers on same level & Globally
 }
 
+void Xwindow::setEventMask(int ev)
+{
+eventMask = ev;
+if (( eventMask & ExposureMask) == ExposureMask)
+   {
+   std::cerr << "Expose set" << std::endl;
+   }
+}
+
+
+void Xwindow::setColourMap(int cm)
+{
+colourMap = cm;
+}
+
 
 void Xwindow::DumpWindow()
 {
@@ -92,7 +107,7 @@ void Xwindow::DumpWindow()
 int Xwindow::JavaWid(int wid)
 {
 Xwindow *ptr = next;
-int count;
+int count = 0;
 // Is it this window
 if ( windowId == wid )
    {
@@ -324,6 +339,7 @@ if ( type == 0 && mapState != 2 )
 }
 
 //------------------------------------------------------//
+// Might not be true after updates for windows mask values 
 // This Expose is not dependant on current state	//
 // used by ClearArea					//
 //------------------------------------------------------//
@@ -387,14 +403,14 @@ std::cerr << "Send Map Window Event" << std::endl;
 //------------------------------------------------------//
 // Config Notified					//
 //------------------------------------------------------//
-void Xwindow::ConfigNotify(int mask,int num)
+void Xwindow::ConfigNotify(int num)
 {
 xEvent  event;
 
 std::memset(&event,0,sizeof(event));
 event.u.u.type = 22;
 event.u.u.sequenceNumber = num;
-if (( mask & StructureNotifyMask ) == StructureNotifyMask )
+if (( eventMask & StructureNotifyMask ) == StructureNotifyMask )
    event.u.configureNotify.event = parent -> windowId;
 else
    event.u.configureNotify.event = windowId;
@@ -497,10 +513,10 @@ else
 //------------------------------------------------------//
 // Create  SubWindow					//
 //------------------------------------------------------//
-Xwindow *Xwindow::CreateSubWindow(int id,int em, int x, int y,
+Xwindow *Xwindow::CreateSubWindow(int id, int x, int y,
                                            int w, int h,int d,int b)
 {
-Xwindow *newPtr = new Xwindow(0,id,this,em,x,y,w,h,d,b);
+Xwindow *newPtr = new Xwindow(0,id,this,x,y,w,h,d,b);
 
 // Is this the first Subwindow
 if ( firstSub == NULL )
@@ -527,7 +543,7 @@ Xwindow *Xwindow::CreatePixmap(int id, int w, int h,int d)
 //return(newPtr);
 
 std::cerr << "CreatePixmap - id " << id << std::endl;
-return(new Xwindow(1,id,this,0,0,0,w,h,d,0));
+return(new Xwindow(1,id,this,0,0,w,h,d,0));
 }
 
 //------------------------------------------------------//

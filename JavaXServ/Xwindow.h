@@ -39,34 +39,37 @@ class Xwindow
       Xwindow *firstSub;
       Xwindow *lastSub;
       Xwindow *parent;
-      int numSub;			// Number of Real Sub windows
-      int xPos,yPos;
-      int eventMask;
-      int mapState;
-      int height,width;
-      int depth,border;
-      
+      int     numSub;			// Number of Real Sub windows
+      int     xPos,yPos;
+      int     eventMask;
+      int     mapState;
+      int     height,width;
+      int     depth,border;
+      int     colourMap;
+
       void NotifyMapped(int ewid,int num);
 
    public:
        Xwindow(int t,int id,Xwindow *parent,
-                    int em, int x,int y,int w,int h,int depth,int border);
+                     int x,int y,int w,int h,int depth,int border);
        ~Xwindow();
-      static  tcpSocket *javasock;	// java Socket
-      static  tcpSocket *X11sock;	// X11 socket
-       Xwindow *CreateSubWindow(int id,int em,int x,int y,
+       static  tcpSocket *javasock;	// java Socket
+       static  tcpSocket *X11sock;	// X11 socket
+       Xwindow *CreateSubWindow(int id,int x,int y,
                                 int w,int h,int depth,int border);
        Xwindow *CreatePixmap(int id,int w,int h,int depth);
        Xwindow *AddressWin(int wid);
        Xwindow *AddressJavaWin(int wid);
-       void	   DumpWindow();
+       void    DumpWindow();
        void    DeleteSubWindows();
        int     JavaWid(int wid);
-       int	   X11windowId();
+       int     X11windowId();
        int     X11windowId(int wid);
        int     ParentMapState();
        int     CreateJavaWin();
        void    CreateJavaPixmap();
+       void    setColourMap(int cm);
+       void    setEventMask(int em);
        void    expose(int num);
        void    exposeMust(int x, int y, int w, int h,int num);
        void    exposePendingSubWindows(int num);
@@ -75,7 +78,7 @@ class Xwindow
        void    MapSubWindows(int num);
        void    GetGeometry(int root,int num);
        void    QueryTree(int root,int num);
-       void    ConfigNotify(int mask,int num);
+       void    ConfigNotify(int num);
        void    GetWindowAttributes(int num);
        void    ConfigWindow(int mask, int *ptr);
        void    rootCoord(int x, int y, short *rx, short *ry);
