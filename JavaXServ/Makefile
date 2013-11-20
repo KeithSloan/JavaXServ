@@ -6,7 +6,9 @@ INCLUDES = -I .
 COBJS	= Xwindow tcpSocket
 EXECS   = JavaXServ 
 
-all:     Xwindow.o tcpSocket.o JavaXServ
+all:     JavaXServ
+
+JavaXServ:	Xwindow.o tcpSocket.o GraphicContext.o
 
 Xwindow.o:	Xwindow.C Xwindow.h
 	$(CC) -c $(CFLAGS) $(INCLUDES) Xwindow.C
@@ -14,11 +16,14 @@ Xwindow.o:	Xwindow.C Xwindow.h
 tcpSocket.o:	tcpSocket.C tcpSocket.h
 	$(CC) -c $(CFLAGS) $(INCLUDES) tcpSocket.C
 
+GraphicsContext.o:    GraphicContext.C GraphicContext.h
+	$(CC) -c $(CFLAGS) $(INCLUDE) GraphicContext.C
+
 JavaXServ.o:	JavaXServ.C
 	$(CC) -c $(CFLAGS) $(INCLUDES) JavaXServ.C
 
-JavaXServ:	JavaXServ.o tcpSocket.o Xwindow.o
-	$(CC) -o JavaXServ  JavaXServ.o tcpSocket.o Xwindow.o $(LIBS)
+JavaXServ:	JavaXServ.o tcpSocket.o Xwindow.o GraphicContext.o
+	$(CC) -o JavaXServ  JavaXServ.o tcpSocket.o Xwindow.o GraphicContext.o $(LIBS)
 	
 clean:	
 	rm *.o

@@ -21,6 +21,7 @@
 #include <unistd.h>
 // #include "tcpSocket.h"
 #include "Xwindow.h"
+#include "GraphicContext.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "time.h"
@@ -65,6 +66,8 @@ tcpSocket *X11Serv;
 tcpSocket *javaServ;
 int       sequenceNum = 0;
 Xwindow   *rootWin;
+GraphicContext *rootGC; 
+// = new GC(0,0);
 //--------------------------------------//
 // Declare static variables             //
 //--------------------------------------//
@@ -72,10 +75,11 @@ Xwindow*   Xwindow::last = rootWin;
 int        Xwindow::nextJavaWin = 1;
 tcpSocket* Xwindow::javasock = NULL;	// Socket to listen for Jave Clients
 tcpSocket* Xwindow::X11sock  = NULL;	// Socket to Listen for X Clients
+Display*   Xwindow::display;
 //--------------------------------------//
 // Globals for X calls & related
 //--------------------------------------//
-Display *display;
+
 char    *displayVariable;
 struct
    {
@@ -119,19 +123,6 @@ reply.data = 0;
 reply.sequenceNumber = sequenceNum;
 reply.length = words - 8;
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-}
-
-int initialColourMap()
-{
-	// For now just use the default colourMap
-	// When working and able to test change to create initial Colormap
-	// So that support concurrent requests
-	
-	// display is a global
-	Screen *screen;
-	
-	screen = XDefaultScreenOfDisplay(display);
-	return(XDefaultColormapOfScreen(screen));
 }
 
 void connectionSetup()
@@ -185,7 +176,7 @@ reply.format8.bitsPerPixel = 8;
 reply.format8.scanLinePad  = 8;
 reply.window.windowId = rootWin -> X11windowId();
 // display is a global variable
-reply.window.defaultColormap = initialColourMap(); // using default colour map from X11 where JavaXServ is running
+reply.window.defaultColormap = rootWin -> initialColourMap(); // using default colour map from X11 where JavaXServ is running
 reply.window.whitePixel = 0x0;
 reply.window.currentInputMask = 0x4180003F;
 reply.window.pixWidth = 600;
@@ -226,7 +217,7 @@ std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 std::cerr << "Reply sequence Number : " << sequenceNum << std::endl;
-reply.atom = XInternAtom(display,name, ptr -> onlyIfExists);
+reply.atom = XInternAtom(Xwindow::display,name, ptr -> onlyIfExists);
 std::cerr << "InternAtom : " << name << " Value : " << reply.atom << std::endl;
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
@@ -241,7 +232,7 @@ std::cerr << "getAtomName" << std::endl;
 std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
-namePtr = XGetAtomName(display,ptr -> id);
+namePtr = XGetAtomName(Xwindow::display,ptr -> id);
 len     = strlen(namePtr);
 reply.length = (len + 3) >> 2;
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
@@ -277,12 +268,11 @@ int format,ret,len;
 
 xGetPropertyReply reply;
 
-std::cerr << "GetProperty " << ptr -> property << " type "
-                       << ptr -> type << std::endl;
+std::cerr << "GetProperty " << ptr -> property << " type " << ptr -> type << std::endl;
 if ( ptr -> window == rootWin -> X11windowId())
    {
    std::cerr << "Root window XGetWindowProperty : " << std::endl;
-   ret = XGetWindowProperty(display,ptr -> window,ptr -> property,
+   ret = XGetWindowProperty(Xwindow::display,ptr -> window,ptr -> property,
          ptr -> longOffset, ptr -> longLength,ptr -> c_delete,
          ptr -> type,&actual,&format,&items,&bytes,&prop);
    if ( ret != 0 )
@@ -393,7 +383,7 @@ if ( i == fontEntries )
    exit(1);
    }
 std::cerr << " FONT " << fontTable[i].font << std::endl;
-if ((fontStr = ::XQueryFont(display,fontTable[i].font)) == NULL )
+if ((fontStr = ::XQueryFont(Xwindow::display,fontTable[i].font)) == NULL )
    {
    std::cerr << "Font not found" << std::endl;
    exit(1);
@@ -425,7 +415,7 @@ Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
 Xwindow::X11sock -> put((char *) fontStr -> properties,8 * reply.nFontProps);
 Xwindow::X11sock -> put((char *) fontStr -> per_char,12 * reply.nCharInfos);
 Xwindow::X11sock -> flush();
-// ::XFreeFontInfo(display,fontStr,1);
+// ::XFreeFontInfo(Xwindow::display,fontStr,1);
 }
 
 
@@ -450,7 +440,7 @@ if ( strlen((char *) ptr + sizeof(xListFontsReq)) != ptr -> nbytes)
 strncpy(pattern,(char *) ptr + sizeof(xListFontsReq),ptr -> nbytes);
 pattern[ptr -> nbytes] = NULL;
 
-listPtr = ::XListFonts(display,pattern,ptr -> maxNames,&num);
+listPtr = ::XListFonts(Xwindow::display,pattern,ptr -> maxNames,&num);
 std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
@@ -488,7 +478,7 @@ std::cerr << "Open Font : " << name << " Fid " << ptr -> fid;
 
 if ( fontEntries < MAXFONTS )
    {
-   if ((fontTable[fontEntries].font = ::XLoadFont(display,name)) == NULL )
+   if ((fontTable[fontEntries].font = ::XLoadFont(Xwindow::display,name)) == NULL )
       {
       std::cerr << "Open Font failed" << std::endl;
       }
@@ -519,7 +509,7 @@ pattern[ptr -> nbytes] = NULL;
 
 std::cerr << pattern << std::endl;
 
-namePtr = ::XListFontsWithInfo(display,pattern,ptr -> maxNames,&num,&fontPtr);
+namePtr = ::XListFontsWithInfo(Xwindow::display,pattern,ptr -> maxNames,&num,&fontPtr);
 std::memset(&reply,0,sizeof(reply));
 
 std::cerr << "Number : " << num << std::endl;
@@ -584,7 +574,7 @@ int  i,num,l,nl;
 std::cerr << "Get Font Path" << std::endl;
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
-pathPtr = XGetFontPath(display,&num);
+pathPtr = XGetFontPath(Xwindow::display,&num);
 reply.nPaths = num;
 nl = 0;
 wrkPtr = pathPtr;
@@ -613,7 +603,7 @@ char *namePtr;
 // Should check if application wants event
 // Should also deal with actual change
 
-namePtr = XGetAtomName(display,ptr -> property);
+namePtr = XGetAtomName(Xwindow::display,ptr -> property);
 std::cerr << "Change Property : " << namePtr << std::endl;
 
 #ifdef OLD
@@ -765,7 +755,7 @@ void allocColor(xAllocColorReq *ptr)
     xcolour.red   = ptr -> red;
     xcolour.green = ptr -> green;
     xcolour.blue  = ptr -> blue;
-    status = XAllocColor(display,ptr -> cmap,&xcolour);          
+    status = XAllocColor(Xwindow::display,ptr -> cmap,&xcolour);          
     if (status == 0 )
        std::cerr << "XAllocColor failed" << std::endl;
        
@@ -795,7 +785,7 @@ void allocNamedColor(xAllocNamedColorReq *ptr)
     // Do the actual AllocName at the Server
     std::memset(&screenColour,0,sizeof(screenColour));
     std::memset(&exactColour,0,sizeof(exactColour));
-    status = XAllocNamedColor(display,ptr -> cmap,name,&screenColour,&exactColour);          
+    status = XAllocNamedColor(Xwindow::display,ptr -> cmap,name,&screenColour,&exactColour);          
     if (status == 0 )
        std::cerr << "XAllocNamedColor failed" << std::endl;
        
@@ -816,6 +806,7 @@ void allocNamedColor(xAllocNamedColorReq *ptr)
     // Add code to send to java if not a direct colour     
 }
 
+
 void lookupColor(xLookupColorReq *ptr)
 {
     Status status;
@@ -826,7 +817,7 @@ void lookupColor(xLookupColorReq *ptr)
     name[ptr -> nbytes] = NULL;
     std::cerr << "LookupColor : " << name << " ColorMap :" << ptr -> cmap << std::endl;
 
-    status = XLookupColor(display,ptr -> cmap,name,&returnColour,&screenColour);          
+    status = XLookupColor(Xwindow::display,ptr -> cmap,name,&returnColour,&screenColour);          
     if (status == 0 )
        std::cerr << "XLookupColor failed" << std::endl;
 
@@ -861,6 +852,22 @@ for ( i = 1 ; i < bitoffset ; i++)
 return(*((int *) ptr));
 }
 
+char* getPointerMask(int mask,char *ptr,int bitoffset)
+{
+// set X.h for bitoffset values
+int i;
+
+for ( i = 1 ; i < bitoffset ; i++)
+   {
+   if ((mask & 1) == 1)
+      {
+      ptr += 4;
+      }
+   mask = mask >> 1;
+   } 
+return(ptr);
+}
+
 void processWindowMask(Xwindow *winptr,int mask,char *ptr)
 {
 int value;
@@ -876,19 +883,117 @@ if (( mask & CWEventMask ) == CWEventMask )
 if (( mask & CWColormap ) == CWColormap )
    {
    value = getValueMask(mask,ptr,13);
-   std::cerr << "Colour Mask : ";
-   printHex(value);
-   winptr -> setColourMap(value);
    }
+else
+   {
+   std::cerr << "Parent Colour Map : " << std::endl;
+   value = (winptr -> getParent()) -> getColourMap();
+   }
+std::cerr << "Colour Mask : ";
+printHex(value);
+winptr -> setColourMap(value);
 }
 
+int convertColourTo24bit(int colourMap,int c)
+{
+    Status status;
+    XColor col;
+
+    col.pixel = c;
+    std::cerr << "Convert colour to 24 bit " << std::endl;
+    std::cerr << "Colour Map : " << colourMap << " Colour : ";
+    printHex(c);
+    status = ::XQueryColor(Xwindow::display,colourMap,&col);          
+    if (status == 0 )
+       std::cerr << "XQueryColor failed" << std::endl;
+    std::cerr << "RGB colour :  Red " << col.red << " Green " << col.green << " Blue " << col.blue << std::endl;
+    return(((col.red >> 8) << 16 ) || ((col.green >> 8) << 8) || (col.blue >> 8));
+}
+
+void createGC(xCreateGCReq *ptr)
+    {
+    Xwindow *winPtr; 
+    int gc,mask,col,colMap;
+    char *wrk1,*wrk2;
+
+    std::cerr << "Create GC" << std::endl;
+    gc = ptr -> gc;
+    std::cerr << "GC : " << gc << std::endl;
+    std::cerr << "Window : " << ptr -> drawable << std::endl;
+    winPtr = rootWin -> AddressWin(ptr -> drawable);
+    colMap = winPtr -> getColourMap();
+    std::cerr << "Colour Map : ";
+    printHex(colMap);
+    new GraphicContext(gc,colMap);
+    mask = ptr -> mask;
+    std::cerr << "Mask : ";
+    printHex(mask);
+    wrk1 = (char *)ptr + sizeof(xCreateGCReq);
+    if ((mask & GCForeground ) == GCForeground )
+       {
+       col = getValueMask(mask,wrk1,2);
+       std::cerr << "ForeGround :";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       wrk2 = getPointerMask(mask,wrk1,2);
+       *((int *) wrk2 ) = col;
+       }
+    if ((mask & GCBackground ) == GCBackground )
+       {
+       col = getValueMask(mask,wrk1,3);
+       std::cerr << "BackGround : ";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       wrk2 = getPointerMask(mask,wrk1,3);
+       *((int *) wrk2 ) = col;
+       }
+    Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
+    }
+
+void changeGC(xChangeGCReq *ptr)
+{
+    GraphicContext *gcPtr; 
+    int mask,col,colMap;
+    char *wrk1,*wrk2;
+
+    std::cerr << "Change GC" << std::endl;
+    std::cerr << "GC : " << ptr -> gc << std::endl;
+    // Change has no drawable !!!!!
+    gcPtr = rootGC -> Address(ptr -> gc);
+    colMap = gcPtr -> getColourMap();
+    std::cerr << "Colour Map : ";
+    printHex(colMap);
+    mask = ptr -> mask;
+    std::cerr << "Mask : ";
+    printHex(mask);
+    wrk1 = (char *)ptr + sizeof(xChangeGCReq);
+    if ((mask & GCForeground ) == GCForeground )
+       {
+       col = getValueMask(mask,wrk1,2);
+       std::cerr << "ForeGround : ";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       wrk2 = getPointerMask(mask,wrk1,2);
+       *((int *) wrk2 ) = col;
+       }
+    if ((mask & GCBackground ) == GCBackground )
+       {
+       col = getValueMask(mask,wrk1,3);
+       std::cerr << "BackGround : ";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       wrk2 = getPointerMask(mask,wrk1,3);
+       *((int *) wrk2 ) = col;
+       }
+    Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
+    }
+
+	
 void createWindow(xCreateWindowReq *ptr)
 {
 Xwindow *winptr, *parentPtr;
 int     mask;
-std::cerr << "Create X11 window : " << ptr -> wid
-          << " parent : " << ptr -> parent
-          << std::endl;
+std::cerr << "Create X11 window : " << ptr -> wid << " parent : " << ptr -> parent << std::endl;
 // ::printf("WID(hex) : %x Parent %x \n",ptr -> wid,ptr -> parent);
 
 mask = ptr-> mask;
@@ -1586,6 +1691,14 @@ while ( len > 0 )       // Need to change to while bytes available
            createPixmap(( xCreatePixmapReq *) &requestBuff);
            break;
 
+      case X_CreateGC :
+	   createGC((xCreateGCReq *) &requestBuff);
+	   break;
+
+      case X_ChangeGC :
+	   changeGC((xChangeGCReq * ) &requestBuff);
+	   break;
+
       case X_FreePixmap :
 	   freePixmap(&requestBuff.req);
 	   break;
@@ -1663,17 +1776,13 @@ while ( len > 0 )       // Need to change to while bytes available
 	   			      
       case X_FreeGC :
       case X_CreateGlyphCursor :
-      case X_ChangeGC :
       case    129 :     // Shape extension
            break;
 
       //************************************************//
       //  forward no reply                              //
       //************************************************//
-      case X_CreateGC :
-	   std::cerr << "Create GC" << std::endl;
-	   Xwindow::javasock -> write((char *) &requestBuff,len);
-	   break;
+      
 			
       default :
 #ifdef DEBUG
@@ -1693,7 +1802,7 @@ void closeDownClient(void)
     std::cerr << "Close Down X Client" << std::endl;
     // Java Client has gone away
     // Close session with Xserver
-    XCloseDisplay(display);
+    XCloseDisplay(Xwindow::display);
     // Close java socket
     std::cerr << "Close Java Socket" << std::endl;
     Xwindow::javasock -> close();
@@ -1932,7 +2041,7 @@ return(ret);
 int setupServerX(int debug,int sockNum)
 {
 std::cerr << "setupServerX : " << sockNum << std::endl;
-if (( display = ::XOpenDisplay(displayVariable)) == NULL )
+if (( Xwindow::display = ::XOpenDisplay(displayVariable)) == NULL )
    {
    std::cerr << "Failed to open display" << std::endl;
    exit(2);
@@ -2111,7 +2220,7 @@ setbuf(stdout,0);
 ::signal(SIGINT,sigHandler);
 ::signal(SIGUSR1,sigHandler);
 
-std::cerr << "JavaXServ version 1.0 alpha Copyright: Keith Sloan 1997,2008" << std::endl;
+std::cerr << "JavaXServ version 1.0 alpha Copyright: Keith Sloan 1997-2013" << std::endl;
 dispNum = sockNum = 3;
 if ( argc > 1 )
    {
@@ -2128,13 +2237,14 @@ if ((displayVariable = ::getenv("DISPLAY")) == 0 )
    exit(2);
    }
    std::cerr << "About to open display" << std::endl;
-if (( display = ::XOpenDisplay(displayVariable)) == NULL )
+if (( Xwindow::display = ::XOpenDisplay(displayVariable)) == NULL )
    {
    std::cerr << "Failed to open display" << std::endl;
    exit(2);
    }
 // Create root window ( same parameters as connection setup
-rootWin = new Xwindow(-1,XDefaultRootWindow(display),NULL,0,0,600,800,8,1);
+rootWin = new Xwindow(-1,XDefaultRootWindow(Xwindow::display),NULL,0,0,600,800,8,1);
+rootGC = new GraphicContext();
 if ( ::strstr(argv[0],"ijavaServ" ) == 0 )
    {
    listenProcess(sockNum,dispNum);

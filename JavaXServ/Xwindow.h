@@ -51,16 +51,17 @@ class Xwindow
       void NotifyMapped(int ewid,int num);
 
    public:
-       Xwindow(int t,int id,Xwindow *parent,
-                     int x,int y,int w,int h,int depth,int border);
+       Xwindow(int t,int id,Xwindow *parent,int x,int y,int w,int h,int depth,int border);
        ~Xwindow();
        static  tcpSocket *javasock;	// java Socket
        static  tcpSocket *X11sock;	// X11 socket
-       Xwindow *CreateSubWindow(int id,int x,int y,
-                                int w,int h,int depth,int border);
+       static  Display   *display;      // X11 Display
+       Xwindow *CreateSubWindow(int id,int x,int y,int w,int h,int depth,int border);
        Xwindow *CreatePixmap(int id,int w,int h,int depth);
        Xwindow *AddressWin(int wid);
        Xwindow *AddressJavaWin(int wid);
+       Xwindow *getParent();
+       int     initialColourMap();
        void    DumpWindow();
        void    DeleteSubWindows();
        int     JavaWid(int wid);
@@ -70,6 +71,7 @@ class Xwindow
        int     CreateJavaWin();
        void    CreateJavaPixmap();
        void    setColourMap(int cm);
+       int     getColourMap();
        void    setEventMask(int em);
        void    expose(int num);
        void    exposeMust(int x, int y, int w, int h,int num);

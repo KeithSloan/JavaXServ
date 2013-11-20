@@ -746,11 +746,11 @@ public int action()
           Windows[jw].repaint();
 	  break;
 
-      case 67 :		// PolyRect
+      case 67 :	// PolyRectangle
           jw = sock.readCard32();
           gc = sock.readCard32();
           count = (wordLen - 3) >> 1;
-          Trail("Segment - Window : "+jw+" : "+count);
+          Trail("PolyRectange - Window : "+jw+" : "+count);
           i = 0;
           gp = Windows[jw].getGraphics();
           gp.setColor(Color.black);

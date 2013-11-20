@@ -48,6 +48,7 @@ if ( t == -1 )
    mapState = 2;
    javaId   = 0;
    windowCount = 1;
+   colourMap = initialColourMap();
    }
 else
    {
@@ -57,12 +58,12 @@ else
    last -> next = this;
    mapState  = 0;
    javaId    = windowCount;
+   colourMap = 0;
    }
 next      = NULL;
 last      = this;
 windowId  = id;
 eventMask = 0;
-colourMap = 0;
 xPos      = x;
 yPos      = y;
 width     = w;
@@ -80,6 +81,20 @@ Xwindow::~Xwindow(void)
 // Need to update pointers on same level & Globally
 }
 
+int Xwindow::initialColourMap()
+{
+// For now just use the default colourMap
+// When working and able to test change to create initial Colormap
+// So that support concurrent requests
+	
+// display is a global
+Screen *screen;
+	
+screen = XDefaultScreenOfDisplay(display);
+return(XDefaultColormapOfScreen(screen));
+}
+
+
 void Xwindow::setEventMask(int ev)
 {
 eventMask = ev;
@@ -95,6 +110,10 @@ void Xwindow::setColourMap(int cm)
 colourMap = cm;
 }
 
+int Xwindow::getColourMap(void)
+{
+return colourMap;
+}
 
 void Xwindow::DumpWindow()
 {
@@ -376,6 +395,11 @@ if ( type == 0 )
    event.u.expose.height = h;
    X11sock -> write((char *) &event,sizeof(event));
    }
+}
+
+Xwindow *Xwindow::getParent(void)
+{
+return parent;
 }
 
 //------------------------------------------------------//
