@@ -58,7 +58,7 @@ else
    last -> next = this;
    mapState  = 0;
    javaId    = windowCount;
-   colourMap = 0;
+   colourMap = parent -> getColourMap();
    }
 next      = NULL;
 last      = this;

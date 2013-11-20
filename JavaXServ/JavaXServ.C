@@ -883,15 +883,10 @@ if (( mask & CWEventMask ) == CWEventMask )
 if (( mask & CWColormap ) == CWColormap )
    {
    value = getValueMask(mask,ptr,13);
+   std::cerr << "Colour Mask : ";
+   printHex(value);
+   winptr -> setColourMap(value);
    }
-else
-   {
-   std::cerr << "Parent Colour Map : " << std::endl;
-   value = (winptr -> getParent()) -> getColourMap();
-   }
-std::cerr << "Colour Mask : ";
-printHex(value);
-winptr -> setColourMap(value);
 }
 
 int convertColourTo24bit(int colourMap,int c)
@@ -1738,7 +1733,6 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_PolyFillArc :
       case X_PolyText8 :
       case X_PutImage :
-      case X_SetClipRectangles :
            std::cerr << "Forward with WinID " << requestBuff.req.id << std::endl;
            // requestBuff.req.id = checkJavaWid(requestBuff.req.id);
            requestBuff.req.id = rootWin -> JavaWid(requestBuff.req.id);
@@ -1772,7 +1766,7 @@ while ( len > 0 )       // Need to change to while bytes available
       //  Ignore for Now                                //
       //************************************************//
 
-      //case X_SetClipRectangles :
+      case X_SetClipRectangles : // Is passed GC not sure how to handle. Is not passed window
 	   			      
       case X_FreeGC :
       case X_CreateGlyphCursor :

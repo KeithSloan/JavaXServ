@@ -9,14 +9,16 @@ Send redraw event back to X11
 Deal with close event
 Frame Name - Change Window Attribute?
 Support for Mapped Windows
-    Deal with in server send map n windows in one request
+    Deal with in server send map n windows in one request - done
+    Action visability
 Add support for failed application command
-Add support for user login including failure
 Test invalid inputs host, port, application
+Error handling when JavaXServ not running and listening
 
+Remove redundant functions.
+Colour dealt with on Server and Graphics Context requests changed to 24 bit, just need to action on client
 
-
-Colour map for PutImage needs sorting
+Colour map for PutImage needs sorting - done
 
 Window & Pixmap treated similar Windows type = 0, Pixmap type = 1
 

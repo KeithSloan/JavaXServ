@@ -32,7 +32,7 @@ public final class Xrequest extends Xsocket
   int      currentWindow;
   Font     currentFont;
   Font     testFont;
-  Xwindow  Windows[] = new Xwindow[450];
+  Xwindow  Windows[] = new Xwindow[1024];
   GraphicsContextSet GCSet = new GraphicsContextSet();
   IndexColorModel im,wicm;
   // The following are passed from action to paint 

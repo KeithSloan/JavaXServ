@@ -1,0 +1,30 @@
+See also Client ToDo in www/XServ directory.
+
+Base README
+Add jnlp & jar of Java Client ( add to Makefile )
+Xwindows app to do a login and then xctl to client passed in command line.
+Java Client uses unchecked Arrays
+    1) Make Array size a parameter passed from HTML
+    2) Bound check and expand Array
+    3) Make linked list - but performance ?
+
+Further develop test clients    
+    Map/UnMap
+    Add to BasicDraw other draw operations
+    Line thickness and styles
+
+Server Makefile generic
+some X11 window attributes handling need implementing as using X11 calls will not allow concurrence with different threads.
+Further work on Fonts
+Improve C++
+X_ClipRectangle - uses GC not sure how to implement
+X_ReparentWindow
+
+Known issues with test clients
+==============================
+xclock 	  - seems to need XOR on draw, not sure how this is set or default
+xcalc	  - Map & Unmap of Windows
+     	    Text Math's font for Pi and superscript
+xcolor 	  - Issue with X_ReparentWindow
+BasicDraw - Need to action Graphics Context 24 bit colour.
+            Rectangle does not look in the right place
