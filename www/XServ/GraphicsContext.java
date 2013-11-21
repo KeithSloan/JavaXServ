@@ -15,6 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
+import java.awt.*;
+
 public class GraphicsContext
    {
    GraphicsContext	next;
@@ -22,30 +24,56 @@ public class GraphicsContext
    int			cid;
    int			bitmask;
    // Use public for speed
-   public int		foreGround;
+   public Color		foreGround;
    public int		backGround;
    public int		lineWidth;
    public int		lineStyle;
    public int		font;
-   
+
    public GraphicsContext()
+        {
+        }
+   
+   public GraphicsContext(int id,int mask)
 	{
+        cid = id;
+	bitmask = mask;
 	next = previous = null;
+	}
+
+   public void setBitMask(int mask)
+	{
+	bitmask = mask;		// Or should it be OR
 	}
 
    private void Trail(String s)
 	{
-	// System.out.println(s);
+	System.out.println(s);
 	}
   
-   public void SetValues(int id,int bm, int fore, int back, int lw, int ls, int fnt )
-   	{
-	cid = id;
-	bitmask = bm;
-	foreGround = fore;
+   public void setForeGround(int fore)
+	{
+        Trail("Foreground : "+fore);
+	foreGround = new Color(fore);
+	}
+  
+   public void setBackGround(int back)
+	{
 	backGround = back;
+	}
+
+   public void setLineWidth(int lw)
+	{
 	lineWidth = lw;
+	}
+
+  public void setLineStyle(int ls)
+	{
 	lineStyle = ls;
+	}
+  
+  public void setFont(int fnt)
+	{
 	font = fnt;
    	}
    
@@ -73,6 +101,10 @@ public class GraphicsContext
 	{
 	return(cid);
         }
+   public int getMask()
+	{
+	return(bitmask);
+	}
    }
 
    

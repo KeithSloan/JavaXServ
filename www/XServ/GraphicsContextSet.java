@@ -16,6 +16,7 @@
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
 import java.util.*;
+import java.awt.Color;
 
 public class GraphicsContextSet
    {
@@ -23,7 +24,7 @@ public class GraphicsContextSet
    private Vector GCSet;
    private int    currentGC;
    // Use public for speed
-   public  int    foreGround;
+   public  Color    foreGround;
    public  int	  backGround;
    public  int	  lineWidth;
    public  int	  lineStyle;
@@ -44,27 +45,40 @@ public class GraphicsContextSet
 
    public void setGC(int id)
 	{
+	int mask;
+        Trail("SetGC : "+id+" : "+currentGC);
         if (id == currentGC)
 	   { 
            return; // return No change
 	   }
 	else
 	   {
+	   Trail("Change of GC");
            GraphicsContext gc = address(id);
-	   foreGround = gc.foreGround;
-	   backGround = gc.backGround;
-	   lineWidth  = gc.lineWidth;
-           lineStyle  = gc.lineStyle;
-           font	      = gc.font;
+	   mask = gc.getMask();
+	   Trail("Mask : "+mask);
+	   // Action based on mask
+	   if (( mask & 0x00000004) == 0x00000004)
+              {
+	      foreGround = gc.foreGround;
+	      Trail("Foreground : "+ foreGround);
+              }
+           if (( mask & 0x00000008) == 0x00000008)
+              backGround = gc.backGround;
+           if (( mask & 0x00000010) == 0x00000010)
+              lineWidth = gc.lineWidth;
+           if (( mask & 0x00000020) == 0x00000020)
+       	      lineStyle = gc.lineStyle;
+	   if (( mask & 0x00004000) == 0x00004000)
+	      font = gc.font;
+   	   // Set new current GC
 	   currentGC  = id;
 	   }
 	}
    
-   public void add(int id, int bm, int fore, int back, int lw, int ls, int fnt)
+   public void add(GraphicsContext gc)
 	{
 	Trail("GraphicsContextSet - add");
-	GraphicsContext gc = new GraphicsContext();
-	gc.SetValues(id,bm,fore,back,lw,ls,fnt);
 	GCSet.addElement(gc);
 	}
    

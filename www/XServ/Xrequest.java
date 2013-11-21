@@ -345,146 +345,148 @@ public static String hex(int n)
     return String.format("0x%8s", Integer.toHexString(n)).replace(' ', '0');
     }
 
+public void processGraphicContext(GraphicsContext gc, int bitmask)
+    {
+    // Make sure we read all the data provided.
+    if (( bitmask & 0x00000001) == 0x00000001)
+       {
+       sock.readByte(true);
+       Trail("Function");
+       }
+    if (( bitmask & 0x00000002) == 0x00000002)
+       {
+       sock.readCard32();
+       }
+    if (( bitmask & 0x00000004) == 0x00000004)
+       {
+       Trail("Graphic Context - set foreGround : ");
+       gc.setForeGround(sock.readCard32());
+       }
+    if (( bitmask & 0x00000008) == 0x00000008)
+       {
+       gc.setBackGround(sock.readCard32());
+       }
+    if (( bitmask & 0x00000010) == 0x00000010)
+       {
+       gc.setLineWidth(sock.readCard16());
+       }
+    if (( bitmask & 0x00000020) == 0x00000020)
+       {
+       gc.setLineStyle(sock.readByte(true));
+       }
+    if (( bitmask & 0x00000040) == 0x00000040)
+       {
+       Trail("capstyle");
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00000080) == 0x00000080)
+       {
+       Trail("joinStyle");
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00000100) == 0x00000100)
+       {
+       Trail("fillStyle");
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00000200) == 0x00000200)
+       {
+       Trail("fillRule");
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00000400) == 0x00000400)
+       {
+       Trail("Tile");
+       sock.readCard32();
+       }
+    if (( bitmask & 0x00000800) == 0x00000800)
+       {
+       Trail("stipple");
+       sock.readCard32();
+       }
+    if (( bitmask & 0x00001000) == 0x00001000)
+       {
+       Trail("stippleXorig");
+       sock.readCard16();
+       }
+    if (( bitmask & 0x00002000) == 0x00002000)
+       {
+       Trail("stippleYorig");
+       sock.readCard16();
+       }
+    if (( bitmask & 0x00004000) == 0x00004000)
+       {
+       gc.setFont(sock.readCard32());
+       }
+    if (( bitmask & 0x00008000) == 0x00008000)
+       {
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00010000) == 0x00010000)
+       {
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00020000) == 0x00020000)
+       {
+       Trail("clipXorig");
+       sock.readCard16();
+       }
+    if (( bitmask & 0x00040000) == 0x00040000)
+       {
+       Trail("clipYorig");
+       sock.readCard16();
+       }
+    if (( bitmask & 0x00080000) == 0x00080000)
+       {
+       Trail("clipMask");
+       sock.readCard32();
+       }
+    if (( bitmask & 0x00100000) == 0x00100000)
+       {
+       Trail("dashOffset");
+       sock.readCard16();
+       }
+    if (( bitmask & 0x00200000) == 0x00200000)
+       {
+       Trail("dashes");
+       sock.readByte(true);
+       }
+    if (( bitmask & 0x00400000) == 0x00400000)
+       {
+       Trail("arcMode");
+       sock.readByte(true);
+       }
+    }
+
 public void createGC(int wlen)
     {
-    int clearLen,len;
-    int cid, drawable, bitmask,function,planeMask,foreGround,backGround;
-    int lineWidth,lineStyle,capStyle,joinStyle,fillStyle,fillRule;
-    int tile,stipple,stippleXorig,stippleYorig,font;
-    int clipXorig,clipYorig,clipMask,dashOffset,dashes,arcMode;
-	
+    int cid, drawable, bitmask;
+    	
     Trail("CreateGC : WordLen "+wlen);
     cid      = sock.readCard32();  	// Graphic Context
     Trail("CreateGC : "+cid);
     drawable = sock.readCard32();
     bitmask  = sock.readCard32();
     Trail("Bit Mask : "+hex(bitmask));
-    len = 16;
-    foreGround = backGround = lineWidth = lineStyle = font = 0;
-    if (( bitmask & 0x00000001) == 0x00000001)
-       {
-       function = sock.readByte(true);
-       Trail("Function : "+function);
-       len++;
-       }
-    if (( bitmask & 0x00000002) == 0x00000002)
-       {
-       planeMask = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00000004) == 0x00000004)
-       {
-       foreGround = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00000008) == 0x00000008)
-       {
-       backGround = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00000010) == 0x00000010)
-       {
-       lineWidth = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00000020) == 0x00000020)
-       {
-       lineStyle = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00000040) == 0x00000040)
-       {
-       capStyle = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00000080) == 0x00000080)
-       {
-       joinStyle = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00000100) == 0x00000100)
-       {
-       fillStyle = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00000200) == 0x00000200)
-       {
-       fillRule = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00000400) == 0x00000400)
-       {
-       tile = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00000800) == 0x00000800)
-       {
-       stipple = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00001000) == 0x00001000)
-       {
-       stippleXorig = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00002000) == 0x00002000)
-       {
-       stippleYorig = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00004000) == 0x00004000)
-       {
-       font = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00008000) == 0x00008000)
-       {
-       sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00010000) == 0x00010000)
-       {
-       sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00020000) == 0x00020000)
-       {
-       clipXorig = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00040000) == 0x00040000)
-       {
-       clipYorig = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00080000) == 0x00080000)
-       {
-       clipMask = sock.readCard32();
-       len += 4;
-       }
-    if (( bitmask & 0x00100000) == 0x00100000)
-       {
-       dashOffset = sock.readCard16();
-       len += 2;
-       }
-    if (( bitmask & 0x00200000) == 0x00200000)
-       {
-       dashes = sock.readByte(true);
-       len++;
-       }
-    if (( bitmask & 0x00400000) == 0x00400000)
-       {
-       arcMode = sock.readByte(true);
-       len++;
-       }
-    Trail("Calc Len : "+len);
-    clearLen = ((wlen << 2) - len);
-    if (clearLen != 0 ) clearRequest(clearLen);
+    GraphicsContext gc = new GraphicsContext(cid,bitmask);
+    processGraphicContext(gc,bitmask);
     Trail("Add to set");
-    GCSet.add(cid,bitmask,foreGround,backGround,lineWidth,lineStyle,font);
+    GCSet.add(gc);
     }
 
-
+public void changeGC(int wlen)
+    {
+    int cid, bitmask;
+    	
+    Trail("ChangeGC : WordLen "+wlen);
+    cid      = sock.readCard32();  	// Graphic Context
+    Trail("ChangeGC : "+cid);
+    bitmask  = sock.readCard32();
+    Trail("Bit Mask : "+hex(bitmask));
+    GraphicsContext gc = GCSet.address(cid);
+    gc.setBitMask(bitmask);
+    processGraphicContext(gc,bitmask);
+    }
 
 
 public int action()
@@ -604,11 +606,15 @@ public int action()
           Windows[i] = new Xwindow(i,w,h,d);
           break;
           
-      case 55 :
+      case 55 :		// createGC
     	  createGC(wordLen);
     	  break;
+
+      case 56 :		// changeGC
+	  changeGC(wordLen);
+	  break;
                     
-	  case 59 :		// Set Clip Rectangles
+      case 59 :		// Set Clip Rectangles
           jw = sock.readCard32();
           Trail("Clip Rectangle : "+jw);
           gp =  Windows[jw].getGraphics(); // Only action if valid Windows found
@@ -748,12 +754,12 @@ public int action()
 
       case 67 :	// PolyRectangle
           jw = sock.readCard32();
-          gc = sock.readCard32();
+          GCSet.setGC(sock.readCard32());
           count = (wordLen - 3) >> 1;
           Trail("PolyRectange - Window : "+jw+" : "+count);
           i = 0;
           gp = Windows[jw].getGraphics();
-          gp.setColor(Color.black);
+          gp.setColor(GCSet.foreGround);
           while ( i < count )
              {
              x = sock.readCard16();

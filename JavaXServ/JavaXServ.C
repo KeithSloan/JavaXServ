@@ -902,7 +902,20 @@ int convertColourTo24bit(int colourMap,int c)
     if (status == 0 )
        std::cerr << "XQueryColor failed" << std::endl;
     std::cerr << "RGB colour :  Red " << col.red << " Green " << col.green << " Blue " << col.blue << std::endl;
-    return(((col.red >> 8) << 16 ) || ((col.green >> 8) << 8) || (col.blue >> 8));
+    //printHex(col.red);
+    //printHex(col.green);
+    //printHex(col.blue);
+    //std::cerr << "Upper Bytes" << std::endl;
+    //printHex(col.red >> 8);
+    //printHex(col.green >> 8);
+    //printHex(col.blue >> 8);
+    //std::cerr << "Shifted Bytes" << std::endl;
+    //printHex((col.red >> 8) << 16);
+    //printHex((col.green >> 8) << 8);
+    //printHex(col.blue >> 8);
+    //std::cerr << "Return Value ";
+    //printHex(((col.red >> 8) << 16 ) | ((col.green >> 8) << 8) | (col.blue >> 8) );
+    return(((col.red >> 8) << 16 ) | ((col.green >> 8) << 8) | (col.blue >> 8) );
 }
 
 void createGC(xCreateGCReq *ptr)
@@ -968,8 +981,13 @@ void changeGC(xChangeGCReq *ptr)
        std::cerr << "ForeGround : ";
        printHex(col);
        col = convertColourTo24bit(colMap,col);
+       //std::cerr << "Converted Colour : ";
+       //printHex(col);
        wrk2 = getPointerMask(mask,wrk1,2);
        *((int *) wrk2 ) = col;
+       //col = getValueMask(mask,wrk1,2);
+       //std::cerr << "Changed ForeGround : ";
+       //printHex(col);
        }
     if ((mask & GCBackground ) == GCBackground )
        {

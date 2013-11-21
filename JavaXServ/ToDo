@@ -10,13 +10,15 @@ Java Client uses unchecked Arrays
 
 Further develop test clients    
     Map/UnMap
-    Add to BasicDraw other draw operations
+    PixMap
+    Add to BasicDraw other draw operations - Roll out Graphics Context colour as per DrawRectangle
     Line thickness and styles
 
 Server Makefile generic
 some X11 window attributes handling need implementing as using X11 calls will not allow concurrence with different threads.
 Further work on Fonts
-Improve C++
+Improve C++ class javaSock extend socket
+Improve Java Class - Linked Lists
 X_ClipRectangle - uses GC not sure how to implement
 X_ReparentWindow
 
