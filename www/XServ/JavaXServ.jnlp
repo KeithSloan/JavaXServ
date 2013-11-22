@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<jnlp spec="1.0+" codebase=
+"http://127.0.0.1/XServ" 
+    href="JavaXServ.jnlp">
+    <information>
+        <title>JavaXServ</title>
+        <vendor>Keith Sloan</vendor>
+    </information>
+    <resources>
+        <!-- Application Resources -->
+        <j2se version="1.7+"
+              href="http://java.sun.com/products/autodl/j2se"/>
+        <jar href="JavaXServ.jar"
+            main="true" />
+
+    </resources>
+    <applet-desc
+         name="JavaXServ"
+         main-class="server"
+	 width="200"
+         height="350">
+	 <param name="application" value="/var/www/testClients/basicDraw"/>
+	 <param name="server" value="127.0.0.1"/>
+	 <param name="port" value="6789"/>
+     </applet-desc>
+     <update check="background"/>
+</jnlp>

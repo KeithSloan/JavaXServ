@@ -1,12 +1,21 @@
 JAVA=javac
-FLAGS=-Xlint 
+FLAGS=-Xlint -d classes
 sources = $(wildcard *.java)
-classes = $(sources:.java=.class)
+classDir = classes
+classList = $(sources:.java=.class)
+fullList = $(addprefix $(classDir)/, $(classList))
 
-all: $(classes)
+all: JavaXServ.jar
+
+printVars:
+	@echo $(fullList)
+ 
+JavaXServ.jar: $(fullList)
+	jar cvfm  JavaXServ.jar  Manifest -C classes .
 
 clean :
-	rm -f *.class
+	rm -f JavaXServ.jar
+	rm -f $(classDir)/*.class
 
-%.class : %.java
+$(classDir)/%.class : %.java
 	$(JAVA) $(FLAGS) $<

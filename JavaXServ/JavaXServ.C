@@ -918,12 +918,41 @@ int convertColourTo24bit(int colourMap,int c)
     return(((col.red >> 8) << 16 ) | ((col.green >> 8) << 8) | (col.blue >> 8) );
 }
 
+void processGCmask(int mask,int colMap,char *ptr)
+{
+    char *wrk;
+    int col;
+
+    if ((mask & GCForeground ) == GCForeground )
+       {
+       col = getValueMask(mask,ptr,2);
+       std::cerr << "ForeGround : ";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       //std::cerr << "Converted Colour : ";
+       //printHex(col);
+       wrk = getPointerMask(mask,ptr,2);
+       *((int *) wrk ) = col;
+       //col = getValueMask(mask,wrk1,2);
+       //std::cerr << "Changed ForeGround : ";
+       //printHex(col);
+       }
+    if ((mask & GCBackground ) == GCBackground )
+       {
+       col = getValueMask(mask,ptr,3);
+       std::cerr << "BackGround : ";
+       printHex(col);
+       col = convertColourTo24bit(colMap,col);
+       wrk = getPointerMask(mask,ptr,3);
+       *((int *) wrk ) = col;
+       }
+}
+
 void createGC(xCreateGCReq *ptr)
     {
     Xwindow *winPtr; 
-    int gc,mask,col,colMap;
-    char *wrk1,*wrk2;
-
+    int gc,mask,colMap;
+    
     std::cerr << "Create GC" << std::endl;
     gc = ptr -> gc;
     std::cerr << "GC : " << gc << std::endl;
@@ -936,34 +965,15 @@ void createGC(xCreateGCReq *ptr)
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    wrk1 = (char *)ptr + sizeof(xCreateGCReq);
-    if ((mask & GCForeground ) == GCForeground )
-       {
-       col = getValueMask(mask,wrk1,2);
-       std::cerr << "ForeGround :";
-       printHex(col);
-       col = convertColourTo24bit(colMap,col);
-       wrk2 = getPointerMask(mask,wrk1,2);
-       *((int *) wrk2 ) = col;
-       }
-    if ((mask & GCBackground ) == GCBackground )
-       {
-       col = getValueMask(mask,wrk1,3);
-       std::cerr << "BackGround : ";
-       printHex(col);
-       col = convertColourTo24bit(colMap,col);
-       wrk2 = getPointerMask(mask,wrk1,3);
-       *((int *) wrk2 ) = col;
-       }
+    processGCmask(mask,colMap,(char *)ptr + sizeof(xCreateGCReq));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 
 void changeGC(xChangeGCReq *ptr)
 {
     GraphicContext *gcPtr; 
-    int mask,col,colMap;
-    char *wrk1,*wrk2;
-
+    int mask,colMap;
+  
     std::cerr << "Change GC" << std::endl;
     std::cerr << "GC : " << ptr -> gc << std::endl;
     // Change has no drawable !!!!!
@@ -974,30 +984,7 @@ void changeGC(xChangeGCReq *ptr)
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    wrk1 = (char *)ptr + sizeof(xChangeGCReq);
-    if ((mask & GCForeground ) == GCForeground )
-       {
-       col = getValueMask(mask,wrk1,2);
-       std::cerr << "ForeGround : ";
-       printHex(col);
-       col = convertColourTo24bit(colMap,col);
-       //std::cerr << "Converted Colour : ";
-       //printHex(col);
-       wrk2 = getPointerMask(mask,wrk1,2);
-       *((int *) wrk2 ) = col;
-       //col = getValueMask(mask,wrk1,2);
-       //std::cerr << "Changed ForeGround : ";
-       //printHex(col);
-       }
-    if ((mask & GCBackground ) == GCBackground )
-       {
-       col = getValueMask(mask,wrk1,3);
-       std::cerr << "BackGround : ";
-       printHex(col);
-       col = convertColourTo24bit(colMap,col);
-       wrk2 = getPointerMask(mask,wrk1,3);
-       *((int *) wrk2 ) = col;
-       }
+    processGCmask(mask,colMap,(char *)ptr + sizeof(xChangeGCReq));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 

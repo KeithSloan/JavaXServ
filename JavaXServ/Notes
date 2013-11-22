@@ -1,14 +1,19 @@
 Colour
 
-Java does not seem to have any concept of reality about colour. For example that displays may only support
+Java does not seem to have any concept of reality about colour limitations. For example that displays may only support
 a minimum number of colours. It does not have the facilities like X11 for managing Colour maps and
 allocating colours. As java supports sRGB colour one can only assume that it assumes the browser
 has the ability to display all colours as sRGB regardless of display monitor.
 
-Therefore all colour map handling will be done on the server and facilities
-added to ship colour maps to the java client where they will be implemented as Index colour model.
+Early X11 clients only support 256 colours, later only 24 bit colour, minimum need to work with both.
+
+Therefore all colour map handling will be done on the server Graphics Context colour values changed to 24bit.
+The one exception to support pixmap's function needs to be added to allow client to read colour map via extra socket.
+Client needs to check if pixmap needs colour map to ask for it to be downloaded.
+Server to track if colour map has been downloaded to client and therefore ship any changes. 
+Pixmaps will be implemented as Index colour model.
 The default colourmap will be that of the server X11 system, maybe a future enhancement would be
-to set the initial colour map from the client based on browser(?)
+to copy the initial colour mape for each instance.
 
 ./JavaXServ > trace 2>&1 &
 

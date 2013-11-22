@@ -756,7 +756,7 @@ public int action()
           jw = sock.readCard32();
           GCSet.setGC(sock.readCard32());
           count = (wordLen - 3) >> 1;
-          Trail("PolyRectange - Window : "+jw+" : "+count);
+          Trail("PolyRectangle - Window : "+jw+" Count "+count);
           i = 0;
           gp = Windows[jw].getGraphics();
           gp.setColor(GCSet.foreGround);
@@ -766,6 +766,7 @@ public int action()
              y = sock.readCard16();
              w = sock.readCard16();
              h = sock.readCard16();
+	     Trail(" x "+x+" y "+y+" w "+w+" h "+h);
              gp.drawRect(x,y,w,h);
              i++;
              }
