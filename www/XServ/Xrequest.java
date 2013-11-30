@@ -348,10 +348,12 @@ public static String hex(int n)
 public void processGraphicContext(GraphicsContext gc, int bitmask)
     {
     // Make sure we read all the data provided.
+    // Each bit in mask takes 4 bytes even if only one byte
+    // So need to read all 4 bytes i.e. 32 bits
+    int l = 0;
     if (( bitmask & 0x00000001) == 0x00000001)
        {
-       sock.readByte(true);
-       Trail("Function");
+       Trail("Function : "+(sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00000002) == 0x00000002)
        {
@@ -368,31 +370,27 @@ public void processGraphicContext(GraphicsContext gc, int bitmask)
        }
     if (( bitmask & 0x00000010) == 0x00000010)
        {
-       gc.setLineWidth(sock.readCard16());
+       gc.setLineWidth(sock.readCard32() & 0xFFFF);
        }
     if (( bitmask & 0x00000020) == 0x00000020)
        {
-       gc.setLineStyle(sock.readByte(true));
+       gc.setLineStyle(sock.readCard32() & 0xFF );
        }
     if (( bitmask & 0x00000040) == 0x00000040)
        {
-       Trail("capstyle");
-       sock.readByte(true);
+       Trail("capstyle : "+(sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00000080) == 0x00000080)
        {
-       Trail("joinStyle");
-       sock.readByte(true);
+       Trail("joinStyle : "+(sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00000100) == 0x00000100)
        {
-       Trail("fillStyle");
-       sock.readByte(true);
+       Trail("fillStyle : "+(sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00000200) == 0x00000200)
        {
-       Trail("fillRule");
-       sock.readByte(true);
+       Trail("fillRule : "+(sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00000400) == 0x00000400)
        {
@@ -406,13 +404,11 @@ public void processGraphicContext(GraphicsContext gc, int bitmask)
        }
     if (( bitmask & 0x00001000) == 0x00001000)
        {
-       Trail("stippleXorig");
-       sock.readCard16();
+       Trail("stippleXorig : " +(sock.readCard32() & 0xFFFF ));
        }
     if (( bitmask & 0x00002000) == 0x00002000)
        {
-       Trail("stippleYorig");
-       sock.readCard16();
+       Trail("stippleYorig : " +(sock.readCard32() & 0xFFFF ));
        }
     if (( bitmask & 0x00004000) == 0x00004000)
        {
@@ -420,21 +416,21 @@ public void processGraphicContext(GraphicsContext gc, int bitmask)
        }
     if (( bitmask & 0x00008000) == 0x00008000)
        {
-       sock.readByte(true);
+       // Only one byte
+       sock.readCard32();
        }
     if (( bitmask & 0x00010000) == 0x00010000)
        {
-       sock.readByte(true);
+       // only one byte
+       sock.readCard32();
        }
     if (( bitmask & 0x00020000) == 0x00020000)
        {
-       Trail("clipXorig");
-       sock.readCard16();
+       Trail("clipXorig : "+(sock.readCard32() & 0xFFFF ));
        }
     if (( bitmask & 0x00040000) == 0x00040000)
        {
-       Trail("clipYorig");
-       sock.readCard16();
+       Trail("clipYorig : " +(sock.readCard32() & 0xFFFF ));
        }
     if (( bitmask & 0x00080000) == 0x00080000)
        {
@@ -443,18 +439,15 @@ public void processGraphicContext(GraphicsContext gc, int bitmask)
        }
     if (( bitmask & 0x00100000) == 0x00100000)
        {
-       Trail("dashOffset");
-       sock.readCard16();
+       Trail("dashOffset : " +(sock.readCard32() & 0xFFFF ));
        }
     if (( bitmask & 0x00200000) == 0x00200000)
        {
-       Trail("dashes");
-       sock.readByte(true);
+       Trail("dashes : " + (sock.readCard32() & 0xFF ));
        }
     if (( bitmask & 0x00400000) == 0x00400000)
        {
-       Trail("arcMode");
-       sock.readByte(true);
+       Trail("arcMode : " +(sock.readCard32() & 0xFF ));
        }
     }
 
@@ -472,6 +465,9 @@ public void createGC(int wlen)
     processGraphicContext(gc,bitmask);
     Trail("Add to set");
     GCSet.add(gc);
+    //len = (((wlen - 4) << 2) - len);
+    //Trail("Bytes to clear :"+len);
+    //clearRequest(len);
     }
 
 public void changeGC(int wlen)
@@ -486,6 +482,9 @@ public void changeGC(int wlen)
     GraphicsContext gc = GCSet.address(cid);
     gc.setBitMask(bitmask);
     processGraphicContext(gc,bitmask);
+    //len = (((wlen - 3) << 2) - len);
+    //Trail("Bytes to clear :"+len);
+    //clearRequest(len);
     }
 
 
@@ -519,8 +518,8 @@ public int action()
    switch (opcode)
       {
       case 1 :	// Create Window
-          p = sock.readCard16();	// parent
-	  i = sock.readCard16();
+          p = sock.readCard32();	// parent only passed short
+	  i = sock.readCard32();	// only passed short
           x = sock.readCard16(); 
           y = sock.readCard16(); 
           w = sock.readCard16(); 
@@ -542,6 +541,18 @@ public int action()
           Trail("Destroy Window : "+i);
           Windows[i].destroy();
           break;
+
+      case 7 : // Reparent Window
+	  i = sock.readCard32();
+          Trail("Reparent Window : "+i);
+	  p = Windows[i].parentIndex();
+	  Windows[p].removeChild(Windows[i]);
+	  p = sock.readCard32();
+          Trail("New Parent : "+p);
+	  Windows[p].registerChild(Windows[i]);
+	  x = sock.readCard16();
+	  y = sock.readCard16();
+	  break;
 
       case 8 : // Map Window
           Trail("Expose/Map Window request");
@@ -597,10 +608,11 @@ public int action()
           break;
 
       case  53 :	// Create PixMap
-          i = sock.readCard16();
+          i = sock.readCard32();
           w = sock.readCard16();
           h = sock.readCard16();
           d = sock.readCard16();
+          sock.readCard16();	// Read Filler
           // Pixmap constructor
           Trail("Create Pixmap : "+i+" w "+w+" h "+h+ " depth "+d);
           Windows[i] = new Xwindow(i,w,h,d);

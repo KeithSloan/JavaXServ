@@ -88,6 +88,12 @@ private void Trail(String s)
       layout();
       }
 
+   public void removeChild(Xwindow w)
+      {
+      Trail("Remove Child");
+      ml.removeLayoutComponent((Component) w.window);
+      }
+
    private void sendKeyEvent(Event e,int code,int detail,int state)
       {
       Rectangle r;

@@ -269,8 +269,8 @@ struct
    char  request;
    char  fill;
    short length;
-   short parentId;
-   short javaId;
+   int	 parentId;
+   int	 javaId;
    short x;
    short y;
    short w;
@@ -284,7 +284,7 @@ std::cerr << " Send Create Java Window for X window: " << windowId
           << std::endl;
 
 javaCreateWin.request  = 1;
-javaCreateWin.length   = 4;
+javaCreateWin.length   = sizeof(javaCreateWin) >> 2;
 javaCreateWin.parentId = parent -> javaId;
 javaCreateWin.javaId   = javaId = nextJavaWin; 
 javaCreateWin.x        = xPos;
@@ -303,12 +303,13 @@ void Xwindow::CreateJavaPixmap()
 struct
    {
    char  request;
-   char  fill;
+   char  fill1;
    short length;
-   short javaId;
+   int	 javaId;
    short w;
    short h;
    short depth;
+   short fill2;
    } createPixmap;
    
 std::cerr << " Send Create Java PixMap : " << javaId 
@@ -317,11 +318,11 @@ std::cerr << " Send Create Java PixMap : " << javaId
           << " depth " << depth
           << std::endl;
 createPixmap.request  = 53;
-createPixmap.length   = 3;
+createPixmap.length   = sizeof(createPixmap) >> 2;
 createPixmap.javaId   = javaId = nextJavaWin++;
 createPixmap.w        = width;
 createPixmap.h        = height;
-createPixmap.depth	  = depth;
+createPixmap.depth    = depth;
 javasock -> write((char *) &createPixmap,sizeof(createPixmap));
 }
 

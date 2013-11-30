@@ -160,10 +160,16 @@ private void Trail(String s)
 	   Trail("X Window Reset Child");
 	   return;
    }
+
+   public void removeChild(Xwindow w)
+   {
+	Trail("X Window Remove Child");
+	window.removeChild(w);
+   }
    
    public int parentIndex()
    {
-	   Trail("X Window Parent Index"+parent);
+	   Trail("X Window Parent Index : "+parent);
 	   return(parent);
    }
    

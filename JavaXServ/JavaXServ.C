@@ -1469,7 +1469,7 @@ void reportRequest(int type)
  
       case X_CreateGC :
            std::cerr << "X_Create GC" << std::endl;
-		   break;
+	   break;
 			      
       case X_FreeGC :
       	   std::cerr << "X_FreeGC" << std::endl;
@@ -1485,6 +1485,10 @@ void reportRequest(int type)
 
       case X_LookupColor :
 	   std::cerr << "X_LookupColor" << std::endl;
+	   break;
+
+      case X_ReparentWindow :
+	   std::cerr << "X_ReparentWindow" << std::endl;
 	   break;
            
       case 129 :     // Shape extension
@@ -1755,6 +1759,7 @@ while ( len > 0 )       // Need to change to while bytes available
       //************************************************//
       case X_CopyPlane :
       case X_CopyArea :
+      case X_ReparentWindow :
            requestBuff.req.id = rootWin -> JavaWid(requestBuff.req.id);
            requestBuff.data[0] = rootWin -> JavaWid(requestBuff.data[0]);
            if ( requestBuff.req.id > 0 && requestBuff.data[0] > 0 ) 
