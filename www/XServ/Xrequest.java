@@ -518,8 +518,8 @@ public int action()
    switch (opcode)
       {
       case 1 :	// Create Window
-          p = sock.readCard32();	// parent only passed short
-	  i = sock.readCard32();	// only passed short
+          p = sock.readCard32();	
+	  i = sock.readCard32();	
           x = sock.readCard16(); 
           y = sock.readCard16(); 
           w = sock.readCard16(); 
@@ -556,6 +556,7 @@ public int action()
 
       case 8 : // Map Window
           Trail("Expose/Map Window request");
+	  // Add code to make window visable
 	  do
              {
              jw = sock.readCard32();
@@ -570,22 +571,22 @@ public int action()
           mask = sock.readCard16();
 	  Trail("Mask : "+mask);
 	  sock.readCard16(); // Read unused
-	  // Need to add code to deal with values
-	  Trail("Number of items : "+(wordLen - 3));
-	  for (n=wordLen - 3; n > 0 ; n--)
-	      {
-	      v = sock.readCard32();
-	      Trail("Read Value : "+v);
-	      }
-     //     if ( p == 0 )
-     //       {
-     //        System.out.println("Config Frame");
-     //        }
-     //     else if ( Windows[i].configWindow() == true )
-     //        {
-     //        Windows[p].resetChild(Windows[i]);
-     //	       }
-          break;
+	  if (( mask & 0x0001 ) == 0x0001)
+             Windows[i].setXpos(sock.readCard32() & 0xFFFF);
+	  if (( mask & 0x0002 ) == 0x0002)
+	     Windows[i].setYpos(sock.readCard32() & 0xFFFF);
+	  if (( mask & 0x0004 ) == 0x0004)
+             Windows[i].setWidth(sock.readCard32() & 0xFFFF);
+	  if (( mask & 0x0008 ) == 0x0008)
+             Windows[i].setHeight(sock.readCard32() & 0xFFFF);
+	  if (( mask & 0x0010 ) == 0x0010)
+             sock.readCard32();
+	  if (( mask & 0x0020 ) == 0x0020)
+             sock.readCard32();
+	  if (( mask & 0x0040 ) == 0x0040)
+             sock.readCard32();
+	  Windows[p].resetChild(Windows[i]); 
+	  break;
 
       case  16 :
     	  InternAtom(parm,byteLen);

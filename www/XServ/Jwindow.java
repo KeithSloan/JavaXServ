@@ -84,6 +84,7 @@ private void Trail(String s)
    public void resetChild(Xwindow c)
       {
       Trail("Reset Child");
+      c.window.resize(c.width,c.height);
       ml.setConstraint(c.window,c.xPos,c.yPos,c.width,c.height);
       layout();
       }

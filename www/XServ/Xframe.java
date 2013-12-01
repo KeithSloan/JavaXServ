@@ -52,4 +52,13 @@ public class Xframe extends Frame
       ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width,w.height);
       layout();
       }
+
+   public void resetChild(Xwindow w)
+      {
+      Trail("Frame Reset Child");
+      w.window.resize(w.width,w.height);
+      ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width,w.height);
+      layout();
+      }
+
    }

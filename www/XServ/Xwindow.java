@@ -32,10 +32,10 @@ public class Xwindow
    int       		width;
    int       		height;
    int       		border;
-   int				depth;
-   byte 			Reds[] = new byte[256];
-   byte 			Greens[] = new byte[256];
-   byte 			Blues[] = new byte[256];
+   int			depth;
+   byte 		Reds[] = new byte[256];
+   byte 		Greens[] = new byte[256];
+   byte 		Blues[] = new byte[256];
 
    public Xwindow(Xsocket s,int i,int p,int x,int y,int w,int h)
       {
@@ -50,14 +50,14 @@ public class Xwindow
       window = null;
       frame  = null;
       image   = null;
-	  window  = null;
+      window  = null;
       } 
 
      // Pixmap Constructor have to pass an on screen component i.e. root win 
      //   public Xwindow(Component c,int i,int p,int w,int h)
    public Xwindow(int i,int w,int h,int d)
       {
-	  int type;
+      int type;
 	  
       Trail("Pixmap constructor");
       type   = 1;
@@ -81,7 +81,7 @@ public class Xwindow
       image = new BufferedImage(w,h,type);
       }
 
-private void Trail(String s)
+   private void Trail(String s)
    {
    System.out.println(s);
    }
@@ -134,14 +134,34 @@ private void Trail(String s)
    
    public void destroy()
    {
-	   if ( parent == 0 ) 
-       {
-       removeFrame();
-       }
-    else
-       {
-       window.removeAll();
-       }
+   if ( parent == 0 ) 
+      {
+      removeFrame();
+      }
+   else
+      {
+      window.removeAll();
+      }
+   }
+
+   public void setXpos(int x)
+   {
+	xPos = x;	
+   }
+   
+   public void setYpos(int y)
+   {
+	yPos = y;
+   }
+
+   public void setWidth(int w)
+   {
+	width = w;
+   }
+
+   public void setHeight(int h)
+   {
+	height = h;
    }
 
    public void registerChild(Xwindow w)
@@ -158,6 +178,8 @@ private void Trail(String s)
    public void resetChild(Xwindow w)
    {
 	   Trail("X Window Reset Child");
+           if ( frame != null ) frame.resetChild(w);
+	   if ( window != null) window.resetChild(w);
 	   return;
    }
 
@@ -227,59 +249,5 @@ private void Trail(String s)
    public Image getImage()
    {
       return(image);
-   }
-
-   public boolean configWindow()
-   {
-      boolean flg = false;
-      int m,i;
-
-      m = sock.readCard16();
-          sock.readCard16();
-      if ((m & 0x01 ) == 0x01)
-         {
-         xPos = sock.readCard32();
-     	 Trail("New x : "+xPos);
-	     flg = true;
-         }
-      if ((m & 0x02 ) == 0x02)
-         {
-         yPos = sock.readCard32();
-	     Trail("New y : "+yPos);
-	     flg = true;
-         }              
-      if ((m & 0x04 ) == 0x04)
-         {              
-         width = sock.readCard32();
-	     Trail("New w : "+width);
-	     flg = true;
-         }
-      if ((m & 0x08 ) == 0x08)
-         {              
-         height = sock.readCard32();
-	     Trail("New h : "+height);
-	     flg = true;
-         }              
-      if ((m & 0x10 ) == 0x10)
-         {              
-         sock.readCard16();
-         sock.readCard16();
-         }              
-      if ((m & 0x20 ) == 0x20)
-         {              
-         sock.readCard32();
-         }              
-      if ((m & 0x40 ) == 0x40)
-         {              
-         i = sock.readByte(false);
-             sock.readByte(false);
-             sock.readCard16();
-         }
-      if ( flg == true )
-         {
-	     window.resize(width,height);
-         return(flg);
-         }
-      return(flg);
    }
 }
