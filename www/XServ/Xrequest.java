@@ -835,14 +835,13 @@ public int action()
           Windows[jw].repaint();
           break;
 
-      case 70 :		// PolyFill Rectangle
+      case 70 :	// PolyFill Rectangle
     	  jw = sock.readCard32();
     	  gp = Windows[jw].getGraphics();
     	  Trail("PolyFill Rectangle - Window : "+jw);
-          gc = sock.readCard32();
+	  GCSet.setGC(sock.readCard32());
           count = (wordLen - 3) >> 1;
-          gp.setColor(Color.green);
-          gp.setColor(Color.red);
+	  gp.setColor(GCSet.foreGround);
           while ( count > 0 )
              {
              xArray[0] = xArray[3] = sock.readCard16();

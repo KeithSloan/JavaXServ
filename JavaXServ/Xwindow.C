@@ -411,13 +411,17 @@ int Xwindow::ParentMapState(void)
 Xwindow *wrkptr = parent;
 
 std::cerr << "Parent Map State - parent : " << parent << " id " << parent -> windowId << std::endl;
-while (wrkptr != NULL)
-     {
-     if ( wrkptr -> mapState != 0 )
-        wrkptr = wrkptr -> parent;
-     }
-if ( wrkptr == NULL ) return(2);
-return(1);
+// Old code has bug will loop
+// Not sure why need to search back
+//while (wrkptr != NULL)
+//     {
+//     if ( wrkptr -> mapState != 0 )
+//        wrkptr = wrkptr -> parent;
+//     }
+//if ( wrkptr == NULL ) return(2);
+//return(1);
+std::cerr << "Parent State : " << parent -> mapState << std::endl;
+return(parent -> mapState);
 }
 
 //------------------------------------------------------//
