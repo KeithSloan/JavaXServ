@@ -499,7 +499,7 @@ public int action()
    int gc;
    int shape,m,delta;
    int cx,cy,x,y,h,w,a1,a2;
-   int i,p,b,d,mask,n,v;
+   int i,p,b,d,mask,n,v,bc;
    int xArray[] = new int[1024];
    int yArray[] = new int[1024];
    byte textBuff[] = new byte[257];
@@ -523,15 +523,19 @@ public int action()
           x = sock.readCard16(); 
           y = sock.readCard16(); 
           w = sock.readCard16(); 
-          h = sock.readCard16(); 
+          h = sock.readCard16();
+	  b = sock.readCard16();	// Get border width
+	  sock.readCard16();
+	  bc = sock.readCard32();	// Get border colour 
           Trail("Create Window Target : "+i+" Parent : "+p);
 	  Trail("x "+x+" y "+y+" w "+w+" h "+h);
+	  Trail("Border width : "+b+" Colour : "+hex(bc));
           if ( p == 0 && w == 1 && h == 1)
              {
              w = 256;
              h = 256;
              }
-	  Windows[i] = Windows[p].create(i,p,x,y,w,h);
+	  Windows[i] = Windows[p].create(i,p,x,y,w,h,b,bc);
           Windows[p].registerChild(Windows[i]);
 //	      Windows[i].buildImage();
           break;

@@ -93,7 +93,7 @@ public class Xwindow
 	   return window.getGraphics();
    }
 
-   public Xwindow create(int i,int p,int x,int y,int w, int h )
+   public Xwindow create(int i,int p,int x,int y,int w, int h ,int b, int bc)
    {
       Xwindow win = new Xwindow(sock,i,p,x,y,w,h); 
       Trail("New Window parameters : x "+x+" y : "+y);
@@ -106,7 +106,7 @@ public class Xwindow
       else
          {
     	 Trail("Sub window");
-    	 win.createPanel();
+    	 win.createPanel(b,bc);
          }
       return(win);
    }
@@ -117,9 +117,9 @@ public class Xwindow
       frame = new Xframe(width,height);
    }
    
-   public void createPanel()
+   public void createPanel(int b,int bc)
    {
-	   window = new Jwindow(sock,index,width,height);
+	   window = new Jwindow(sock,index,width,height,b,bc);
    }
 
    public void removeFrame()

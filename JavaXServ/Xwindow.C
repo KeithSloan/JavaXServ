@@ -70,6 +70,7 @@ width     = w;
 height    = h;
 depth     = d;
 border    = b;
+borderColour = 0;
 firstSub  = lastSub = NULL;
 levelNext = levelPrevious = NULL;
 numSub = 0;
@@ -113,6 +114,11 @@ colourMap = cm;
 int Xwindow::getColourMap(void)
 {
 return colourMap;
+}
+
+void Xwindow::setBorderColour(int bc)
+{
+borderColour = bc;
 }
 
 void Xwindow::DumpWindow()
@@ -267,7 +273,7 @@ int Xwindow::CreateJavaWin()
 struct
    {
    char  request;
-   char  fill;
+   char  fill1;
    short length;
    int	 parentId;
    int	 javaId;
@@ -275,6 +281,9 @@ struct
    short y;
    short w;
    short h;
+   short b;
+   short fill2;
+   int   bc;
    } javaCreateWin;
 
 std::cerr << " Send Create Java Window for X window: " << windowId 
@@ -291,6 +300,8 @@ javaCreateWin.x        = xPos;
 javaCreateWin.y        = yPos;
 javaCreateWin.w        = width;
 javaCreateWin.h        = height;
+javaCreateWin.b	       = border;
+javaCreateWin.bc       = borderColour;
 javasock -> write((char *)&javaCreateWin,sizeof(javaCreateWin));
 return(nextJavaWin++);
 }

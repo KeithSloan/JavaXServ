@@ -836,7 +836,7 @@ void lookupColor(xLookupColorReq *ptr)
     // Add code to send to java if not a direct colour  
 }
 
-int getValueMask(int mask,char *ptr,int bitoffset)
+int getValueMask(int mask,int *ptr,int bitoffset)
 {
 // set X.h for bitoffset values
 int i;
@@ -845,14 +845,14 @@ for ( i = 1 ; i < bitoffset ; i++)
    {
    if ((mask & 1) == 1)
       {
-      ptr += 4;
+      ptr++;
       }
    mask = mask >> 1;
    } 
-return(*((int *) ptr));
+return(*ptr);
 }
 
-char* getPointerMask(int mask,char *ptr,int bitoffset)
+int* getPointerMask(int mask,int *ptr,int bitoffset)
 {
 // set X.h for bitoffset values
 int i;
@@ -861,32 +861,11 @@ for ( i = 1 ; i < bitoffset ; i++)
    {
    if ((mask & 1) == 1)
       {
-      ptr += 4;
+      ptr++;
       }
    mask = mask >> 1;
    } 
 return(ptr);
-}
-
-void processWindowMask(Xwindow *winptr,int mask,char *ptr)
-{
-int value;
-std::cerr << "Window Mask : ";
-printHex(mask);
-if (( mask & CWEventMask ) == CWEventMask )
-   {
-   value = getValueMask(mask,ptr,11);
-   std::cerr << "Event Mask : ";
-   printHex(value);
-   winptr -> setEventMask(value);
-   }
-if (( mask & CWColormap ) == CWColormap )
-   {
-   value = getValueMask(mask,ptr,13);
-   std::cerr << "Colour Mask : ";
-   printHex(value);
-   winptr -> setColourMap(value);
-   }
 }
 
 int convertColourTo24bit(int colourMap,int c)
@@ -918,9 +897,44 @@ int convertColourTo24bit(int colourMap,int c)
     return(((col.red >> 8) << 16 ) | ((col.green >> 8) << 8) | (col.blue >> 8) );
 }
 
-void processGCmask(int mask,int colMap,char *ptr)
+void processWindowMask(Xwindow *winPtr,int mask,int *ptr)
 {
-    char *wrk;
+int value, col, *wrk;
+int colMap; 
+std::cerr << "Window Mask : ";
+printHex(mask);
+if (( mask & CWBackPixel ) == CWBackPixel )
+   {
+   value = getValueMask(mask,ptr,1);
+   std::cerr << "BackGround Pixel : ";
+   printHex(value);
+   }
+if (( mask & CWBorderPixel ) == CWBorderPixel )
+   {
+   value = getValueMask(mask,ptr,3);
+   std::cerr << "Border Pixel : ";
+   printHex(value);
+   winPtr -> setBorderColour(convertColourTo24bit(winPtr -> getColourMap(),value));
+   }
+if (( mask & CWEventMask ) == CWEventMask )
+   {
+   value = getValueMask(mask,ptr,11);
+   std::cerr << "Event Mask : ";
+   printHex(value);
+   winPtr -> setEventMask(value);
+   }
+if (( mask & CWColormap ) == CWColormap )
+   {
+   value = getValueMask(mask,ptr,13);
+   std::cerr << "Colour Mask : ";
+   printHex(value);
+   winPtr -> setColourMap(value);
+   }
+}
+
+void processGCmask(int mask,int colMap,int *ptr)
+{
+    int *wrk;
     int col;
 
     if ((mask & GCForeground ) == GCForeground )
@@ -932,7 +946,7 @@ void processGCmask(int mask,int colMap,char *ptr)
        //std::cerr << "Converted Colour : ";
        //printHex(col);
        wrk = getPointerMask(mask,ptr,2);
-       *((int *) wrk ) = col;
+       *wrk = col;
        //col = getValueMask(mask,wrk1,2);
        //std::cerr << "Changed ForeGround : ";
        //printHex(col);
@@ -944,7 +958,7 @@ void processGCmask(int mask,int colMap,char *ptr)
        printHex(col);
        col = convertColourTo24bit(colMap,col);
        wrk = getPointerMask(mask,ptr,3);
-       *((int *) wrk ) = col;
+       *wrk = col;
        }
 }
 
@@ -965,7 +979,7 @@ void createGC(xCreateGCReq *ptr)
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    processGCmask(mask,colMap,(char *)ptr + sizeof(xCreateGCReq));
+    processGCmask(mask,colMap,(int *)ptr + (sizeof(xCreateGCReq) >> 2));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 
@@ -984,7 +998,7 @@ void changeGC(xChangeGCReq *ptr)
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    processGCmask(mask,colMap,(char *)ptr + sizeof(xChangeGCReq));
+    processGCmask(mask,colMap,(int *)ptr + (sizeof(xChangeGCReq) >> 2));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 
@@ -1000,8 +1014,8 @@ mask = ptr-> mask;
 if ((parentPtr = rootWin -> AddressWin(ptr -> parent)) != 0 )
    {
    winptr = parentPtr -> CreateSubWindow(ptr -> wid,ptr -> x,ptr -> y,ptr -> width,ptr -> height,ptr -> depth,ptr -> borderWidth); 
+   processWindowMask(winptr,mask,(int *) ptr + ( sizeof(xCreateWindowReq) >> 2 ));
    winptr -> CreateJavaWin();
-   processWindowMask(winptr,mask,(char *) ptr + sizeof(xCreateWindowReq));
    }
 else
    {
@@ -1054,7 +1068,7 @@ int     mask;
 std::cerr << "Change Window Attributes" << std::endl;
 winPtr = rootWin -> AddressWin(ptr -> window);
 mask = ptr -> valueMask;
-processWindowMask(winPtr,mask,(char *) ptr + sizeof(xChangeWindowAttributesReq));
+processWindowMask(winPtr,mask,(int *) ptr + (sizeof(xChangeWindowAttributesReq) >> 2));
 //
 //      Send Config Notify Event
 //

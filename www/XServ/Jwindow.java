@@ -28,6 +28,7 @@ public class Jwindow extends Panel
    int       width;
    int       height;
    int       border;
+   Color     borderColour;
 
 public Jwindow(Xsocket s,Image img,int i,int w,int h)
      {
@@ -41,13 +42,15 @@ public Jwindow(Xsocket s,Image img,int i,int w,int h)
      super.setLayout(ml);
      } 
    
-public Jwindow(Xsocket s,int i,int w,int h)
+public Jwindow(Xsocket s,int i,int w,int h,int b,int bc)
      {
      super();
      width  = w;
      height = h; 
      index  = i;
      sock   = s;
+     border = b;
+     borderColour = new Color(bc);
      image  = null;
      ml     = new MapLayout(width,height);
      super.setLayout(ml);
@@ -57,18 +60,22 @@ private void Trail(String s)
    {
    System.out.println(s);
    }
-   public void paint(Graphics g)
+   
+public void paint(Graphics g)
       {
-      g.setColor(Color.black);
+      Graphics2D g2D = (Graphics2D) g;
+
+      g2D.setColor(borderColour);
+      g2D.setStroke(new BasicStroke(border));
       if ( image != null )
          {
-         g.drawImage(image,0,0,this);
+         g2D.drawImage(image,0,0,this);
          }
       else
          {
          System.out.println("Pain jWindow : "+index+" which has null image");
          }
-      g.drawRect(0,0,width-1,height-1);
+      g2D.drawRect(0,0,width-1,height-1);
       // g.drawString("Win "+index,5,20);
       }
  
