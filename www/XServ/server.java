@@ -78,9 +78,6 @@ public class server extends Applet implements Runnable
       if ((parmStr = getParameter("port")) != null )
          port = parmInt.parseInt(parmStr);
       Trail("Server : "+serverName+" Port : "+port);
-      setLayout(new BorderLayout());
-      panel = request.initBasePanel();
-      add("Center", panel);
       }
 
    public void paint(Graphics g)

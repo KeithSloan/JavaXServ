@@ -21,8 +21,6 @@ import java.awt.image.*;
 public final class Xrequest extends Xsocket
 {
   Xsocket  sock = new Xsocket();
-  // What is Base panel doing
-  BasePanel base = new BasePanel();
   int      sequenceNum = 0;
   int      majorVersion;
   int      minorVersion;
@@ -78,12 +76,6 @@ public void setup(String application,String server,int port)
    currentFont = new Font("Courier",Font.PLAIN,10);
    testFont = new Font("Courier",Font.PLAIN,10);
    }
-
-public Panel initBasePanel()
-{
-	base.init();
-	return(base);
-}
 
 public void sendApplication(String application)
 {
