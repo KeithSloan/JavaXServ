@@ -21,7 +21,7 @@ import java.awt.image.*;
 public class Xwindow
    {
    int       		type;
-   Jwindow   		window;
+   BorderPanel 		window;
    Xsocket   		sock;
    Xframe    		frame;
    BufferedImage	image;
@@ -44,7 +44,7 @@ public class Xwindow
       xPos    = x;
       yPos    = y;
       width   = w;
-      height  = h; 
+      height  = h;
       index   = i;
       sock    = s;
       window = null;
@@ -96,8 +96,9 @@ public class Xwindow
    public Xwindow create(int i,int p,int x,int y,int w, int h ,int b, int bc)
    {
       Xwindow win = new Xwindow(sock,i,p,x,y,w,h); 
-      Trail("New Window parameters : x "+x+" y : "+y);
+      Trail("New Window parameters : x "+x+" y : "+y+ " border : "+b);
       Trail(" w : "+w+" h : "+h);
+      win.border = b;
       if ( p == 0 )
          {
          Trail("Base Window");
@@ -114,22 +115,22 @@ public class Xwindow
 
    public void createFrame()
    {
-      frame = new Xframe(width,height);
+   frame = new Xframe(width,height);
    }
    
    public void createPanel(int b,int bc)
    {
-	   window = new Jwindow(sock,index,width,height,b,bc);
+   window = new BorderPanel(sock,index,width,height,b,bc);
    }
 
    public void removeFrame()
    {
-      if ( frame != null ) frame.dispose();
+   if ( frame != null ) frame.dispose();
    }
    
    public void remove()
    {
-	   window.removeAll();
+   window.removeAll();
    }
    
    public void destroy()
@@ -146,58 +147,58 @@ public class Xwindow
 
    public void setXpos(int x)
    {
-	xPos = x;	
+   xPos = x;	
    }
    
    public void setYpos(int y)
    {
-	yPos = y;
+   yPos = y;
    }
 
    public void setWidth(int w)
    {
-	width = w;
+   width = w;
    }
 
    public void setHeight(int h)
    {
-	height = h;
+   height = h;
    }
 
    public void registerChild(Xwindow w)
    {
-	   Trail("X Window RegisterChild");
-	   if ( index != 0 )
-	      {
-	      if ( frame != null ) frame.registerChild(w);
-	      if ( window != null) window.registerChild(w);
-	      }
-	   return;
+   Trail("X Window RegisterChild");
+	  // if ( index != 0 )
+	  //    {
+   if ( frame != null ) frame.registerChild(w);
+   if ( window != null) window.registerChild(w);
+	  //    }
+	  // return;
    }
    
    public void resetChild(Xwindow w)
    {
-	   Trail("X Window Reset Child");
-           if ( frame != null ) frame.resetChild(w);
-	   if ( window != null) window.resetChild(w);
-	   return;
+   Trail("X Window Reset Child");
+   if ( frame != null ) frame.resetChild(w);
+   if ( window != null) window.resetChild(w);
+   return;
    }
 
    public void removeChild(Xwindow w)
    {
-	Trail("X Window Remove Child");
-	window.removeChild(w);
+   Trail("X Window Remove Child");
+   window.removeChild(w);
    }
    
    public int parentIndex()
    {
-	   Trail("X Window Parent Index : "+parent);
-	   return(parent);
+   Trail("X Window Parent Index : "+parent);
+   return(parent);
    }
    
    public void repaint()
    {
-	   Trail("Xwindow Repaint ???");
+   Trail("Xwindow Repaint ???");
    }
    public void clearArea(int x, int y, int w, int h)
    {

@@ -49,15 +49,15 @@ public class Xframe extends Frame
       Trail("Frame Register Child");
       // add("1",(Component) w); 
       add((Component) w.window,"1");
-      ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width,w.height);
+      ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width+2*w.border,w.height+2*w.border);
       layout();
       }
 
    public void resetChild(Xwindow w)
       {
-      Trail("Frame Reset Child");
-      w.window.resize(w.width,w.height);
-      ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width,w.height);
+      Trail("Frame Reset Child : border :"+w.border);
+      w.window.resize(w.width,w.height);	// This is without borders
+      ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width+2*w.border,w.height+2*w.border);
       layout();
       }
 
