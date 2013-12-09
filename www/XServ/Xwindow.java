@@ -165,6 +165,18 @@ public class Xwindow
    height = h;
    }
 
+   public void mapWindow()
+   {
+   Trail("X MapWindow");
+   if ( window != null) window.mapWindow();
+   }
+
+   public void unMapWindow()
+   {
+   Trail("X UnMapWindow");
+   if ( window != null) window.unMapWindow();
+   }
+
    public void registerChild(Xwindow w)
    {
    Trail("X Window RegisterChild");

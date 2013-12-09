@@ -107,7 +107,7 @@ void main()
 char text[256];
 XEvent event;		/* the XEvent declaration !!! */
 KeySym key;
-	
+int mapState;	
 init_x();
 init_colours();
 init_windows();
@@ -115,7 +115,7 @@ init_windows();
 XSetForeground(display,gc,chartreuse);
 //XDrawArc(display,window,gc,45,1, 17,17,0,23040);
 XDrawRectangle(display, window2, gc, 10, 10, 30, 30);
- 
+mapState = 1; 
 /* look for events forever... */
 while(1) 
    {		
@@ -139,5 +139,18 @@ while(1)
         close_x();
         }
       }
+    if (event.type == ButtonPress)
+         {
+	 if ( mapState == 1 )
+            {
+            XUnmapWindow(display,window3);
+	    mapState = 0;
+            }
+         else
+            {
+            XMapRaised(display, window3);
+	    mapState = 1;
+            }
+	 }
     }
 }

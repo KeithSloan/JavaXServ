@@ -557,8 +557,15 @@ public int action()
              {
              jw = sock.readCard32();
 	     Trail("Map Window : "+jw);
+	     Windows[jw].mapWindow();
              } while ( jw != 0 );
           break;
+
+      case 10 : // UnMap Window
+          i = sock.readCard32();
+	  Trail("UnMap Window : "+i);
+	  Windows[i].unMapWindow();
+	  break;
 
       case 12 :	// Config Window
 	  i = sock.readCard32();

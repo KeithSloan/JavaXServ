@@ -87,6 +87,18 @@ public Graphics getGraphics()
    {
    return(inner.getGraphics());
    }
+
+public void mapWindow()
+   {
+   super.setVisible(true);
+   inner.setVisible(true);
+   }
+
+public void unMapWindow()
+   {
+   super.setVisible(false);
+   inner.setVisible(false);
+   }
  
    public void registerChild(Xwindow w)
       {

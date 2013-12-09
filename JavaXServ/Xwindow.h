@@ -81,7 +81,7 @@ class Xwindow
        void    SendJavaMapInitial();
        void    SendJavaMapFlush();
        void    MapWindow(int state,int num);
-       void    UnMapWindow(void);
+       int     UnMapWindow(void);
        void    MapSubWindows(int num);
        void    GetGeometry(int root,int num);
        void    QueryTree(int root,int num);

@@ -657,14 +657,16 @@ if ( winptr != NULL )
       winptr -> exposePendingSubWindows(sequenceNum);
       }
    Xwindow::javasock -> flushExposeMapHeader();
-   }
-  
+   } 
 }
 
 void unMapWindow(xResourceReq *ptr)
 {
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
-winptr -> UnMapWindow();
+// UnMapWindow and return JavaId
+ptr -> id  = winptr -> UnMapWindow();
+Xwindow::javasock -> write((char *) ptr,sizeof(xResourceReq));
+std::cerr << "Send UnMapWindow Request" << std::endl;
 }
 
 void mapSubwindows(xResourceReq *ptr)
