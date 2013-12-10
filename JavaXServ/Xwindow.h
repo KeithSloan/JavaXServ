@@ -46,6 +46,7 @@ class Xwindow
       int     height,width;
       int     depth,border;
       int     borderColour;
+      int     backGroundColour;
       int     colourMap;
       int     exposeCount;
 
@@ -72,6 +73,7 @@ class Xwindow
        int     CreateJavaWin();
        void    CreateJavaPixmap();
        void    setBorderColour(int bc);
+       void    setBackGroundColour(int bc);
        void    setColourMap(int cm);
        int     getColourMap();
        void    setEventMask(int em);

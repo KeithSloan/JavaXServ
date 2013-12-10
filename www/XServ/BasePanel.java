@@ -40,7 +40,7 @@ public BasePanel(Xsocket s,Image img,int i,int w,int h)
      super.setLayout(ml);
      } 
    
-public BasePanel(Xsocket s,int i,int w,int h)
+public BasePanel(Xsocket s,int i,int w,int h,Color bgc)
      {
      super();
      width  = w;
@@ -48,7 +48,7 @@ public BasePanel(Xsocket s,int i,int w,int h)
      index  = i;
      sock   = s;
      image  = null;
-     super.setBackground(Color.white);  // Need to add support for Window Background
+     super.setBackground(bgc);  
      ml     = new MapLayout(width,height);
      super.setLayout(ml);
      }

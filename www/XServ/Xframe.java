@@ -23,9 +23,10 @@ public class Xframe extends Frame
    private static final long serialVersionUID = 1L;
    MapLayout ml;
 
-   public Xframe(int w,int h)
+   public Xframe(int w,int h,int bgc)
       {
       super();
+      super.setBackground(new Color(bgc));
       addNotify();
       resize(w+20,h+60);
       ml = new MapLayout(w+20,h+60);

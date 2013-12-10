@@ -177,7 +177,7 @@ reply.format8.scanLinePad  = 8;
 reply.window.windowId = rootWin -> X11windowId();
 // display is a global variable
 reply.window.defaultColormap = rootWin -> initialColourMap(); // using default colour map from X11 where JavaXServ is running
-reply.window.whitePixel = 0x0;
+reply.window.whitePixel = 0x00FFFFFF;
 reply.window.currentInputMask = 0x4180003F;
 reply.window.pixWidth = 600;
 reply.window.pixHeight = 800;
@@ -909,6 +909,7 @@ if (( mask & CWBackPixel ) == CWBackPixel )
    {
    value = getValueMask(mask,ptr,1);
    std::cerr << "BackGround Pixel : ";
+   winPtr -> setBackGroundColour(convertColourTo24bit(winPtr -> getColourMap(),value));
    printHex(value);
    }
 if (( mask & CWBorderPixel ) == CWBorderPixel )
