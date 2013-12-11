@@ -61,5 +61,40 @@ public class Xframe extends Frame
       ml.setConstraint(w.window,w.xPos+10,w.yPos+50,w.width+2*w.border,w.height+2*w.border);
       layout();
       }
+   public boolean handleEvent(Event e)
+    {
+    int k;
 
-   }
+//    Trail("Frame Handle Event : "+e.id);
+    switch ( e.id )
+       {
+       case Event.KEY_PRESS :
+     //       k = KeySymToCode(e.key);
+//	    Trail("Key : "+e.key+" KeySym : "+k);
+//	    sendKeyEvent(e,2,k,keyMask(e));
+            break;
+
+       case Event.KEY_RELEASE:
+//	    sendKeyEvent(e,3,KeySymToCode(e.key),keyMask(e));
+	    break;
+
+       case Event.MOUSE_DOWN:
+//	    sendKeyEvent(e,4,1,1);
+	    break;
+
+       case Event.MOUSE_UP:
+//            sendKeyEvent(e,5,1,0x100);
+            break;
+        	  
+       case Event.LOST_FOCUS:
+	    System.out.println("Lost Focus");
+	    break;
+
+       case Event.WINDOW_DESTROY:
+            System.out.println("Close Window");
+	    dispose();
+            break;
+       }
+    return(true);
+    }
+}

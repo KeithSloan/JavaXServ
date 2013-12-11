@@ -23,22 +23,10 @@ public class BasePanel extends Panel
    private static final long serialVersionUID = 1L;
    MapLayout ml;
    Xsocket   sock;
-   Image     image;
    int	     index;	
    int       width;
    int       height;
 
-public BasePanel(Xsocket s,Image img,int i,int w,int h)
-     {
-     super();
-     width  = w;
-     height = h; 
-     index  = i;
-     sock   = s;
-     image  = img;
-     ml     = new MapLayout(width,height);
-     super.setLayout(ml);
-     } 
    
 public BasePanel(Xsocket s,int i,int w,int h,Color bgc)
      {
@@ -47,7 +35,6 @@ public BasePanel(Xsocket s,int i,int w,int h,Color bgc)
      height = h; 
      index  = i;
      sock   = s;
-     image  = null;
      super.setBackground(bgc);  
      ml     = new MapLayout(width,height);
      super.setLayout(ml);
@@ -59,71 +46,62 @@ private void Trail(String s)
    }
    
 public void paint(Graphics g)
-      {
-      if ( image != null )
-         {
-         g.drawImage(image,0,0,this);
-         }
-      else
-         {
-         System.out.println("Pain jWindow : "+index+" which has null image");
-         }
-      // g.drawString("Win "+index,5,20);
-      }
+   {
+   }
  
-   public void registerChild(Xwindow w)
-      {
-      Trail("BasePanel Register Child");
+public void registerChild(Xwindow w)
+    {
+    Trail("BasePanel Register Child");
  //     add("1",(Component) w);
-      add((Component) w.window,"1");
-      ml.setConstraint(w.window,w.xPos-w.border,w.yPos-w.border,w.width+2*w.border,w.height+2*w.border);
-      layout();
-      }
+    add((Component) w.window,"1");
+    ml.setConstraint(w.window,w.xPos-w.border,w.yPos-w.border,w.width+2*w.border,w.height+2*w.border);
+    layout();
+    }
 
-   public void resetChild(Xwindow c)
-      {
-      Trail("BasePanel Reset Child");
-      c.window.resize(c.width,c.height);
-      ml.setConstraint(c.window,c.xPos-c.border,c.yPos-c.border,c.width+2*c.border,c.height+2*c.border);
-      layout();
-      }
+public void resetChild(Xwindow c)
+    {
+    Trail("BasePanel Reset Child");
+    c.window.resize(c.width,c.height);
+    ml.setConstraint(c.window,c.xPos-c.border,c.yPos-c.border,c.width+2*c.border,c.height+2*c.border);
+    layout();
+    }
 
-   public void removeChild(Xwindow w)
-      {
-      Trail("BasePanel Remove Child");
-      ml.removeLayoutComponent((Component) w.window);
-      }
+public void removeChild(Xwindow w)
+    {
+    Trail("BasePanel Remove Child");
+    ml.removeLayoutComponent((Component) w.window);
+    }
 
-   private void sendKeyEvent(Event e,int code,int detail,int state)
-      {
-      Rectangle r;
+private void sendKeyEvent(Event e,int code,int detail,int state)
+    {
+    Rectangle r;
 
-      r = bounds();    
-      sock.replyEvent(code);
-      sock.addByte(detail);
-      sock.addCard16(0);		// sequence number updated by javaServ
-      // sock.addCard32((int) e.when);	// time
-      sock.addCard32(0);		// time  0 => Current
-      sock.addCard32(0);		// root Window
-      sock.addCard32(index);		// updated by javaServ
-      sock.addCard32(0);		// Child
-      sock.addCard16(r.x + e.x);
-      sock.addCard16(r.y + e.y);
-      sock.addCard16(e.x);
-      sock.addCard16(e.y);
-      sock.addCard16(state);		// State
-      sock.addByte(1);			// Same Screen = true
-      sock.addByte(0);			// unused 
-      sock.flushEvent();
-      }
+    r = bounds();    
+    sock.replyEvent(code);
+    sock.addByte(detail);
+    sock.addCard16(0);		// sequence number updated by javaServ
+    // sock.addCard32((int) e.when);	// time
+    sock.addCard32(0);		// time  0 => Current
+    sock.addCard32(0);		// root Window
+    sock.addCard32(index);	// updated by javaServ
+    sock.addCard32(0);		// Child
+    sock.addCard16(r.x + e.x);
+    sock.addCard16(r.y + e.y);
+    sock.addCard16(e.x);
+    sock.addCard16(e.y);
+    sock.addCard16(state);	// State
+    sock.addByte(1);		// Same Screen = true
+    sock.addByte(0);		// unused 
+    sock.flushEvent();
+    }
 
-   private int keyMask(Event e)
-      {
-      int r = 0;
-      if ( e.shiftDown())   r += 1;
-      if ( e.controlDown()) r += 4; 
-      return(r);
-      }
+private int keyMask(Event e)
+    {
+    int r = 0;
+    if ( e.shiftDown())   r += 1;
+    if ( e.controlDown()) r += 4; 
+    return(r);
+    }
 
    
 //   void processMouseEvent(MouseEvent e)
@@ -136,50 +114,50 @@ public void paint(Graphics g)
 //	   Trail("Key Event from Jwindow : "+index+" Hooray !!!"); 
 //   }
    
-   public boolean handleEvent(Event e)
-      {
-      int k;
+public boolean handleEvent(Event e)
+    {
+    int k;
 
-      // Trail("Handle Event from Jwindow : "+index+" Hooray !!!");
-      switch ( e.id )
-         {
-         case Event.KEY_PRESS :
-    	      k = KeySymToCode(e.key);
-	          Trail("Key : "+e.key+" KeySym : "+k);
-	          sendKeyEvent(e,2,k,keyMask(e));
-              break;
+    // Trail("Handle Event from Jwindow : "+index+" Hooray !!!");
+    switch ( e.id )
+       {
+       case Event.KEY_PRESS :
+            k = KeySymToCode(e.key);
+	    Trail("Key : "+e.key+" KeySym : "+k);
+	    sendKeyEvent(e,2,k,keyMask(e));
+            break;
 
-         case Event.KEY_RELEASE:
-	          sendKeyEvent(e,3,KeySymToCode(e.key),keyMask(e));
-	          break;
+       case Event.KEY_RELEASE:
+	    sendKeyEvent(e,3,KeySymToCode(e.key),keyMask(e));
+	    break;
 
-         case Event.MOUSE_DOWN:
-	          sendKeyEvent(e,4,1,1);
-	          break;
+       case Event.MOUSE_DOWN:
+	    sendKeyEvent(e,4,1,1);
+	    break;
 
-         case Event.MOUSE_UP:
-        	  sendKeyEvent(e,5,1,0x100);
-        	  break;
+       case Event.MOUSE_UP:
+            sendKeyEvent(e,5,1,0x100);
+            break;
         	  
-         case Event.LOST_FOCUS:
-	          System.out.println("Lost Focus");
-	          break;
-         }
-      return(true);
-      }
+       case Event.LOST_FOCUS:
+	    System.out.println("Lost Focus");
+	    break;
+       }
+    return(true);
+    }
 
 
    // Used for debugging Only ( root window has no image )
-   public void drawImage(Image img,int x,int y,int w,int h)
-      {
-      Graphics g = getGraphics();
+public void drawImage(Image img,int x,int y,int w,int h)
+   {
+   Graphics g = getGraphics();
 
-      g.drawImage(img,x,y,w,h,this);
-      }
+   g.drawImage(img,x,y,w,h,this);
+   }
 
-   private char KeySymToCode(int v)
-      {
-      char SYMtoCODE[] = {
+private char KeySymToCode(int v)
+   {
+   char SYMtoCODE[] = {
           0,   0,   0,   0,   0,   0,   0,   0,   // 0x00
           0,   0,   0,   0,   0,   0,  51,   0,   // 0x00
           0,   0,   0,   0,   0,   0,   0,   0,   // 0x10
@@ -214,7 +192,7 @@ public void paint(Graphics g)
           0,   0,   0,   0,   0,   0,   0,   0,   // 0xf8
         };
 
-      return(SYMtoCODE[(int) v]);
-      }
+   return(SYMtoCODE[(int) v]);
    }
+}
 
