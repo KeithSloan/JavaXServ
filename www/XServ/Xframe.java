@@ -22,10 +22,14 @@ public class Xframe extends Frame
    {
    private static final long serialVersionUID = 1L;
    MapLayout ml;
+   XkeyBoard keyboard;
+   int       index;
 
-   public Xframe(int w,int h,int bgc)
+   public Xframe(int i,XkeyBoard k,int w,int h,int bgc)
       {
       super();
+      index = i;
+      keyboard = k;
       super.setBackground(new Color(bgc));
       addNotify();
       resize(w+20,h+60);
@@ -39,9 +43,9 @@ public class Xframe extends Frame
    System.out.println(s);
    }
    
-   public Xwindow create(Xsocket s,int i,int p,int x,int y,int w,int h)
+   public Xwindow create(int i,XkeyBoard k, int p,int x,int y,int w,int h)
       {
-      Xwindow win = new Xwindow(s,i,p,x,y,w,h);
+      Xwindow win = new Xwindow(i,k,p,x,y,w,h);
       return(win);
       }
 
@@ -64,26 +68,28 @@ public class Xframe extends Frame
    public boolean handleEvent(Event e)
     {
     int k;
+    Rectangle r;
 
+    r = bounds();
 //    Trail("Frame Handle Event : "+e.id);
     switch ( e.id )
        {
        case Event.KEY_PRESS :
-     //       k = KeySymToCode(e.key);
-//	    Trail("Key : "+e.key+" KeySym : "+k);
-//	    sendKeyEvent(e,2,k,keyMask(e));
+            k = keyboard.KeySymToCode(e.key);
+	    Trail("Key : "+e.key+" KeySym : "+k);
+	    keyboard.sendKeyEvent(index,r,e,2,k,keyboard.keyMask(e));
             break;
 
        case Event.KEY_RELEASE:
-//	    sendKeyEvent(e,3,KeySymToCode(e.key),keyMask(e));
+	    keyboard.sendKeyEvent(index,r,e,3,keyboard.KeySymToCode(e.key),keyboard.keyMask(e));
 	    break;
 
        case Event.MOUSE_DOWN:
-//	    sendKeyEvent(e,4,1,1);
+	    keyboard.sendKeyEvent(index,r,e,4,1,1);
 	    break;
 
        case Event.MOUSE_UP:
-//            sendKeyEvent(e,5,1,0x100);
+            keyboard.sendKeyEvent(index,r,e,5,1,0x100);
             break;
         	  
        case Event.LOST_FOCUS:

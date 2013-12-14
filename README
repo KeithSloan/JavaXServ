@@ -2,16 +2,16 @@ JavaXServ (c) Keith Sloan - updated 11/12/13
 
 The idea behind JavaXServ is to allow people to run X11 Clients via a Java enabled browser.
 
-Normally to deplore X11 Clients an X Server has to be installed on the target machine. With JavaXServ the target machines only need to have a Java enabled browser.
+Normally to deploy X11 Clients an X Server has to be installed on the target machine. With JavaXServ the target machines only need to have a Java enabled browser.
 
-In effect JavaXserv implements a three tier X11 system. In place of the normal X11 Client & X11 Server, with JavaXServ the X11 Server is split into two parts. A JavaXServ process written in C++ and XServ a Java Applet. A single JavaXServ process listens for multiple Java Applets, forking to pair each Java Applet with its X11 Client. JavaXServ tries to handle as much of the X11 protocol as possible and only passes onto the XServ Java applet what is needed.
+In effect JavaXServ implements a three tier X11 system. In place of the normal X11 Client & X11 Server, with JavaXServ the X11 Server is split into two parts. A JavaXServ process written in C++ and XServ a Java Applet. A single JavaXServ process listens for multiple Java Applets, forking to pair each Java Applet with its X11 Client. JavaXServ tries to handle as much of the X11 protocol as possible and only passes onto the XServ Java applet what is needed.
 
 Installation.
 
 JavaXServ runs on a Unix or Linux system. Testing is done on an Ubuntu system.
-The code of JavaXServ is available in the code section and can be downloaded by making the appropriate git request.
+The source for JavaXServ is available in the code section and can be downloaded by making the appropriate git request. Compilation is achived by running make.
 
-At this stage of development one need to start the JavaXServ process, but it is envisaged that inetd would be used when things reach a production level.
+At this stage of development one needs to start the JavaXServ process, but it is envisaged that inetd would be used when things reach a production level.
 .
 The directory www should be made available to a web server for example apache. For example via a soft symbolic link.
 

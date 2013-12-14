@@ -21,6 +21,7 @@ import java.awt.image.*;
 public final class Xrequest extends Xsocket
 {
   Xsocket  sock = new Xsocket();
+  XkeyBoard keyboard = new XkeyBoard(sock);
   int      sequenceNum = 0;
   int      majorVersion;
   int      minorVersion;
@@ -72,7 +73,7 @@ public void setup(String application,String server,int port)
    sock.open(server,port);
    sock.setByteOrder((char) 0x42); 
    sendApplication(application);
-   Windows[0] = new Xwindow(sock,0,0,0,0,800,640);
+   Windows[0] = new Xwindow(0,keyboard,0,0,0,800,640);
    currentFont = new Font("Courier",Font.PLAIN,10);
    testFont = new Font("Courier",Font.PLAIN,10);
    }

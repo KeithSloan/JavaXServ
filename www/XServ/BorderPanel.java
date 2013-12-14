@@ -45,11 +45,11 @@ public class BorderPanel extends Panel
 //     super.setLayout(ml);
 //    } 
    
-public BorderPanel(Xsocket s,int i,int w,int h,int b,int bc,int bgc)
+public BorderPanel(int i,XkeyBoard k,int w,int h,int b,int bc,int bgc)
      {
      super();
      backGroundColour = new Color(bgc);
-     inner = new BasePanel(s,i,w,h,backGroundColour);
+     inner = new BasePanel(i,k,w,h,backGroundColour);
      width  = w;
      height = h; 
      border = b;

@@ -16,8 +16,10 @@
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
 
+import java.awt.*;
 import java.net.*;
 import java.io.*;
+
 
 // Need to deal with the fact that length in multiples of 4 bytes
 // Add data then set length
@@ -458,4 +460,5 @@ public class Xsocket
          System.out.println("Error writing Socket "+err);
          }
       }
+
    }

@@ -22,7 +22,7 @@ public class Xwindow
    {
    int       		type;
    BorderPanel 		window;
-   Xsocket   		sock;
+   XkeyBoard		keyboard;
    Xframe    		frame;
    BufferedImage	image;
    int       		parent;		// needed for Reconfigure Window 
@@ -37,7 +37,7 @@ public class Xwindow
    byte 		Greens[] = new byte[256];
    byte 		Blues[] = new byte[256];
 
-   public Xwindow(Xsocket s,int i,int p,int x,int y,int w,int h)
+   public Xwindow(int i,XkeyBoard k,int p,int x,int y,int w,int h)
       {
       type    = 0;
       parent  = p;
@@ -46,7 +46,7 @@ public class Xwindow
       width   = w;
       height  = h;
       index   = i;
-      sock    = s;
+      keyboard = k;
       window = null;
       frame  = null;
       image   = null;
@@ -95,7 +95,7 @@ public class Xwindow
 
    public Xwindow create(int i,int p,int x,int y,int w, int h ,int b, int bc,int bgc)
    {
-      Xwindow win = new Xwindow(sock,i,p,x,y,w,h); 
+      Xwindow win = new Xwindow(i,keyboard,p,x,y,w,h); 
       Trail("New Window parameters : x "+x+" y : "+y+ " border : "+b);
       Trail(" w : "+w+" h : "+h);
       win.border = b;
@@ -115,12 +115,12 @@ public class Xwindow
 
    public void createFrame(int bgc)
    {
-   frame = new Xframe(width,height,bgc);
+   frame = new Xframe(index,keyboard,width,height,bgc);
    }
    
    public void createPanel(int b,int bc,int bgc)
    {
-   window = new BorderPanel(sock,index,width,height,b,bc,bgc);
+   window = new BorderPanel(index,keyboard,width,height,b,bc,bgc);
    }
 
    public void removeFrame()
