@@ -711,9 +711,11 @@ public int action()
     	  Trail("PolyLine : "+parm+" Window : "+jw);
           gp =  Windows[jw].getGraphics();
           //gp.setColor(Color.blue);
-	  gp.setXORMode(Color.yellow);
-          gc = sock.readCard32();
-          Trail("Graphics Context : "+gc);
+	  //gp.setXORMode(Color.yellow);
+          GCSet.setGC(sock.readCard32());
+          Trail("Foreground : "+GCSet.currentGC.foreGround);
+	  //gp.setXORMode(Color.yellow);
+	  gp.setColor(GCSet.currentGC.foreGround);
           Trail("points : "+count);
           cx = sock.readCard16();
           cy = sock.readCard16();
@@ -777,7 +779,7 @@ public int action()
           Trail("PolyRectangle - Window : "+jw+" Count "+count);
           i = 0;
           gp = Windows[jw].getGraphics();
-          gp.setColor(GCSet.foreGround);
+          gp.setColor(GCSet.currentGC.foreGround);
           while ( i < count )
              {
              x = sock.readCard16();
@@ -796,13 +798,14 @@ public int action()
     	  count = wordLen - 4;
     	  jw = sock.readCard32();
     	  Trail("FillPoly - window "+jw);
-          gc = sock.readCard32();
+          GCSet.setGC(sock.readCard32());
           shape = sock.readByte(false);
     	  m = sock.readByte(false);
     	  sock.readCard16();
     	  gp = Windows[jw].getGraphics();
-    	  gp.setColor(Color.yellow);
-    	  Trail("Mode : "+m+" Shape : "+shape+" GC : "+gc);
+    	  gp.setColor(GCSet.currentGC.foreGround);
+	  Trail("Foreground : "+GCSet.currentGC.foreGround);
+    	  Trail("Mode : "+m+" Shape : "+shape);
           if ( count < 1024 )
              {
              switch ( m )
@@ -847,7 +850,7 @@ public int action()
     	  Trail("PolyFill Rectangle - Window : "+jw);
 	  GCSet.setGC(sock.readCard32());
           count = (wordLen - 3) >> 1;
-	  gp.setColor(GCSet.foreGround);
+	  gp.setColor(GCSet.currentGC.foreGround);
           while ( count > 0 )
              {
              xArray[0] = xArray[3] = sock.readCard16();

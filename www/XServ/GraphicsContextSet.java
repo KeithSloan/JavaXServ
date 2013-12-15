@@ -18,25 +18,28 @@
 import java.util.*;
 import java.awt.Color;
 
+
+
 public class GraphicsContextSet
    {
    // Vector GCSet = new Vector();
    private Vector GCSet;
-   private int    currentGC;
+   private int    currentId;
    // Use public for speed
-   public  Color    foreGround;
-   public  int	  backGround;
-   public  int	  lineWidth;
-   public  int	  lineStyle;
-   public  int	  font;
-  
+   public GraphicsContext currentGC;
+   
    public GraphicsContextSet()
 	{
 	super();
 	Trail("Graphics Context Set");
 	GCSet = new Vector();
-	currentGC = 0;
+	currentId = 0;
 	}
+   private static String hex(int n)
+      {
+      // call toUpperCase() if that's required
+      return String.format("0x%8s", Integer.toHexString(n)).replace(' ', '0');
+      }
 
    private void Trail(String s)
       {
@@ -46,33 +49,18 @@ public class GraphicsContextSet
    public void setGC(int id)
 	{
 	int mask;
-        Trail("SetGC : "+id+" : "+currentGC);
-        if (id == currentGC)
+        Trail("SetGC : "+id+" Current : "+currentId);
+        if (id == currentId)
 	   { 
            return; // return No change
 	   }
 	else
 	   {
 	   Trail("Change of GC");
-           GraphicsContext gc = address(id);
-	   mask = gc.getMask();
-	   Trail("Mask : "+mask);
-	   // Action based on mask
-	   if (( mask & 0x00000004) == 0x00000004)
-              {
-	      foreGround = gc.foreGround;
-	      Trail("Foreground : "+ foreGround);
-              }
-           if (( mask & 0x00000008) == 0x00000008)
-              backGround = gc.backGround;
-           if (( mask & 0x00000010) == 0x00000010)
-              lineWidth = gc.lineWidth;
-           if (( mask & 0x00000020) == 0x00000020)
-       	      lineStyle = gc.lineStyle;
-	   if (( mask & 0x00004000) == 0x00004000)
-	      font = gc.font;
-   	   // Set new current GC
-	   currentGC  = id;
+	   // Changing does not seem to depend on mask - see test with xclock
+	   // just changing pointer
+           currentGC  = address(id);
+	   currentId  = id;
 	   }
 	}
    
