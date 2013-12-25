@@ -1,6 +1,6 @@
 CC=gcc
 CFLAGS=-c
-LDFLAGS=-lX11
+LDFLAGS=-lX11 -lXpm -lXaw3d
 sources = $(wildcard *.c)
 objects = $(sources:.c=.o)
 executables = $(objects:.o=)

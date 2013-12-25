@@ -132,7 +132,7 @@ return(newfd);
 int tcpSocket::read(char *buffer,int len)
 {
 int r;
-std::cerr << "Reading" << std::endl;
+//std::cerr << "Reading Length : " << len << std::endl;
 r = ::read(sockfd,buffer,len);
 // std::cerr << "Bytes Read : " << r << std::endl;
 return(r);

@@ -16,6 +16,7 @@
 // along with JavaXServ.  If not, see <http://www.gnu.org/licenses/>.
 
 #include "tcpSocket.h"
+#include "ColourMap.h"
 
 extern "C"              // C includes
 {
@@ -64,6 +65,7 @@ class Xwindow
        Xwindow *AddressJavaWin(int wid);
        Xwindow *getParent();
        int     initialColourMap();
+       void    listColourMaps();
        void    DumpWindow();
        void    DeleteSubWindows();
        int     JavaWid(int wid);
@@ -76,6 +78,7 @@ class Xwindow
        void    setBackGroundColour(int bc);
        void    setColourMap(int cm);
        int     getColourMap();
+       int     getJavaWid();
        void    setEventMask(int em);
        void    expose(int num);
        void    exposeMust(int x, int y, int w, int h,int num);

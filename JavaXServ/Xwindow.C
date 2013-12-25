@@ -40,6 +40,7 @@ Xwindow::Xwindow(int t, int id, Xwindow *par,int x,int y,int w,int h,int d,int b
 // d,b depth border
 {
 // Is this the root window
+windowId  = id;
 if ( t == -1 )
    {
    type     = 0;
@@ -62,7 +63,6 @@ else
    }
 next      = NULL;
 last      = this;
-windowId  = id;
 eventMask = 0;
 xPos      = x;
 yPos      = y;
@@ -76,6 +76,7 @@ firstSub  = lastSub = NULL;
 levelNext = levelPrevious = NULL;
 numSub = 0;
 windowCount++;
+std::cerr << "Xwindow constructor : Colour Map : "<< colourMap << std::endl;
 }
 
 Xwindow::~Xwindow(void)
@@ -83,18 +84,57 @@ Xwindow::~Xwindow(void)
 // Need to update pointers on same level & Globally
 }
 
+//void Xwindow::listColourMaps()
+//{
+//Colormap *ptr;
+//int      i,count;
+
+//ptr = XListInstalledColormaps(Xwindow::display,windowId,&count);
+//std::cerr << "Installed Colour Maps" << std::endl;
+//for ( i = 0; i < count; i++ )
+//    {
+//    std::cerr << "Colour Map : " << (int) *ptr;
+//    ::printf(" 0x%08x\n",(int) *ptr);
+//    ptr++;
+//    }
+//}
+
 int Xwindow::initialColourMap()
 {
-// For now just use the default colourMap
-// When working and able to test change to create initial Colormap
-// So that support concurrent requests
-	
-// display is a global
-Screen *screen;
-	
-screen = XDefaultScreenOfDisplay(display);
-return(XDefaultColormapOfScreen(screen));
+return(0x20); 
 }
+
+// My Ubuntu system only support 24bit colour so we have to do own think for colourmap
+
+//Screen *screen;
+
+//Visual    visual;
+//Colormap  cm;
+
+//std::memset(&visual,0,sizeof(visual));
+//visual.visualid = 0x21;
+//visual.c_class = StaticColor;
+//visual.c_class = PseudoColor;
+//visual.red_mask = 0xFF0000;
+//visual.green_mask = 0xFF00;
+//visual.blue_mask = 0xFF;
+//visual.bits_per_rgb = 8;
+//visual.map_entries = 256;
+//std::cerr << "Create Colour Map : Window : "<< windowId << std::endl;
+//cm = XCreateColormap(Xwindow::display,windowId,&visual,AllocNone);
+//std::cerr << "Colour Map Created: " << cm << " : ";
+//::printf("0x%08x\n",(int) cm);
+//std::cerr << "Install Colour Map" << std::endl;
+//XInstallColormap(Xwindow::display,cm);
+//listColourMaps();
+//return(cm);
+//}
+	 
+//screen = XDefaultScreenOfDisplay(display);
+//std::cerr << "Default Colour Map Depth : " << DefaultDepth(display,0) << std::endl;
+//std::cerr << "Default Colour Map : " << XDefaultColormapOfScreen(screen) << std::endl; 
+//return(XDefaultColormapOfScreen(screen));
+//}
 
 
 void Xwindow::setEventMask(int ev)
@@ -112,6 +152,9 @@ void Xwindow::setColourMap(int cm)
 colourMap = cm;
 }
 
+
+// Think there maybe an X call to get Colour Maps of Window
+// Need to investigate also think more than one colour map per Window
 int Xwindow::getColourMap(void)
 {
 return colourMap;
@@ -169,6 +212,14 @@ int Xwindow::X11windowId()
 {
 	return(windowId);
 }
+//
+// Return Java Windos Id for this window
+//
+int Xwindow::getJavaWid()
+{
+	return(javaId);
+}
+
 
 //---------------------------------------------------//
 // Search all SubWindows for JavaWid return WindowId //

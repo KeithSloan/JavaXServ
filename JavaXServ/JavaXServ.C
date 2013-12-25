@@ -22,6 +22,7 @@
 // #include "tcpSocket.h"
 #include "Xwindow.h"
 #include "GraphicContext.h"
+#include "ColourMap.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "time.h"
@@ -46,7 +47,9 @@ extern "C"              // C includes
 #define MAXFONTNAME  256
 #define STACKSIZE   1024
 #define FIRSTKEY       9
-#define TIMEOUT	      600
+#define TIMEOUT	     600
+#define MAXREQUESTSIZE 1024
+#define COLOURMAPSIZE 256
 
 #define DEBUG
 
@@ -66,7 +69,8 @@ tcpSocket *X11Serv;
 tcpSocket *javaServ;
 int       sequenceNum = 0;
 Xwindow   *rootWin;
-GraphicContext *rootGC; 
+GraphicContext *rootGC;
+ColourMap *rootColourMap = new ColourMap(0x20);
 // = new GC(0,0);
 //--------------------------------------//
 // Declare static variables             //
@@ -157,7 +161,7 @@ reply.setup.release = 11;
 reply.setup.ridBase = 0x05000000;
 reply.setup.ridMask = 0x003FFFFF;
 reply.setup.nbytesVendor = 0x1E;
-reply.setup.maxRequestSize = 1024;
+reply.setup.maxRequestSize = MAXREQUESTSIZE;	// maxRequestSize in bytes is this value * 4
 reply.setup.numRoots = 1;
 reply.setup.numFormats = 2;
 reply.setup.imageByteOrder = MSBFirst;
@@ -176,7 +180,7 @@ reply.format8.bitsPerPixel = 8;
 reply.format8.scanLinePad  = 8;
 reply.window.windowId = rootWin -> X11windowId();
 // display is a global variable
-reply.window.defaultColormap = rootWin -> initialColourMap(); // using default colour map from X11 where JavaXServ is running
+reply.window.defaultColormap = rootWin -> getColourMap(); 
 reply.window.whitePixel = 0x00FFFFFF;
 reply.window.currentInputMask = 0x4180003F;
 reply.window.pixWidth = 600;
@@ -185,20 +189,20 @@ reply.window.mmWidth = 156;
 reply.window.mmHeight = 112;
 reply.window.minInstalledMaps = 1;
 reply.window.maxInstalledMaps = 1;
-reply.window.rootVisualID = 0x20;
+reply.window.rootVisualID = 0x21;
 reply.window.rootDepth = 8;
 reply.window.nDepths = 2;
 reply.depth1.depth = 1;
 reply.depth1.nVisuals = 0;
 reply.depth8.depth = 8;
 reply.depth8.nVisuals = 1;
-reply.visual8.visualID = 0x20;
-reply.visual8.c_class = StaticColor;  // Need to support 8 bit Pseudocolour for Old Applications
+reply.visual8.visualID = 0x21;
+reply.visual8.c_class = PseudoColor;  // Need to support 8 bit Pseudocolour for Old Applications
 reply.visual8.bitsPerRGB = 8;
-reply.visual8.colormapEntries = 256;
-reply.visual8.redMask = 0xFF;
+reply.visual8.colormapEntries = 512;
+reply.visual8.redMask = 0xFF0000;
 reply.visual8.greenMask = 0xFF00;
-reply.visual8.blueMask = 0xFF0000;
+reply.visual8.blueMask = 0xFF;
 // Need to add support for 24bit true colour for new applications
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 std::cerr << "Reply Authourized" << std::endl;
@@ -682,6 +686,54 @@ if ( winptr != NULL )
    Xwindow::javasock -> flushExposeMapHeader();
    }
 }
+void sendDrawableColMap(int d,int cm)
+{
+struct
+    {
+    CARD8 reqType;
+    BYTE pad;
+    CARD16 length B16;
+    Drawable drawable B32;
+    Colormap map B32;
+    } xSendDrawableColMapReq;
+
+std::cerr << "Send Drawable Colour Map" << std::endl;    
+xSendDrawableColMapReq.reqType = 200;
+xSendDrawableColMapReq.length = 3;
+xSendDrawableColMapReq.drawable = d;
+xSendDrawableColMapReq.map = cm;
+Xwindow::javasock -> write((char *) &xSendDrawableColMapReq,sizeof(xSendDrawableColMapReq));
+}
+
+
+void putImage(xPutImageReq *ptr)
+{
+Xwindow   *winPtr; 
+int       colmap,jw;
+ColourMap *mapPtr;
+
+std::cerr << "PutImage Request" << std::endl;
+winPtr = rootWin -> AddressWin(ptr -> drawable);
+jw = winPtr -> getJavaWid();
+// If less than 24 bit colour we may need to send ColourMap
+if ( ptr -> depth < 24 )
+   {
+   std::cerr << "Drawable : " << ptr -> drawable << std::endl;   
+   colmap = winPtr -> getColourMap();
+   std::cerr << "Colour Map : ";
+   printHex(colmap);
+   mapPtr = rootColourMap -> Address(colmap);
+   if (mapPtr -> getDownLoaded() == 0 )
+      {
+      mapPtr -> sendColourMap();
+      }
+   sendDrawableColMap(jw,colmap);
+   }
+std::cerr << "Send PutImage Request" << std::endl;
+ptr -> drawable = jw;
+Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
+}
+
 
 
 void queryExtension(xQueryExtensionReq *ptr)
@@ -742,37 +794,48 @@ Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
 
 void allocColor(xAllocColorReq *ptr)
 {
-    Status status;
-    XColor xcolour;
+//  Status status;
+//    XColor xcolour;
+    int xcolour;
     xAllocColorReply reply;
+    ColourMap *mapPtr;
+    int pixel;
     	
     std::cerr << "AllocColor - ColorMap :" << ptr -> cmap
-          << " Red   : " << ptr -> red
-          << " Green : " << ptr -> green
-          << " Blue  : " << ptr -> blue
+          << " Red   : " << ((ptr -> red) >> 8 )
+          << " Green : " << ((ptr -> green) >> 8)
+          << " Blue  : " << ((ptr -> blue) >> 8)
           << std::endl;
-          
-    // Do the actual Alloc at the Server
-    std::memset(&xcolour,0,sizeof(xcolour));
-    xcolour.red   = ptr -> red;
-    xcolour.green = ptr -> green;
-    xcolour.blue  = ptr -> blue;
-    status = XAllocColor(Xwindow::display,ptr -> cmap,&xcolour);          
-    if (status == 0 )
-       std::cerr << "XAllocColor failed" << std::endl;
+    xcolour = ((ptr -> red >> 8) << 16) | (( ptr -> green >> 8) << 8) | (ptr->blue >> 8);
+    std::cerr << "Colour : ";
+    printHex(xcolour);
+    mapPtr = rootColourMap -> Address(ptr-> cmap);
+    pixel = mapPtr -> AllocColour(xcolour);  
+    // Check for -1 map full#
+
+    // Does not work if local XServer only supports 24bit
+    //std::memset(&xcolour,0,sizeof(xcolour));
+    //xcolour.red   = ptr -> red & 0xFF;
+    //xcolour.green = ptr -> green & 0xFF;
+    //xcolour.blue  = ptr -> blue & 0xFF;
+    //status = XAllocColor(Xwindow::display,ptr -> cmap,&xcolour);          
+    //if (status == 0 )
+    //   std::cerr << "XAllocColor failed" << std::endl;
        
     // Send the Reply
     std::memset(&reply,0,sizeof(reply));
     reply.type = 1;
     reply.sequenceNumber = sequenceNum;
     reply.length = 0;
-    reply.red    = xcolour.red;
-    reply.green  = xcolour.green;
-    reply.blue   = xcolour.blue;
-    reply.pixel  = xcolour.pixel;
+    reply.red    = ptr -> red;
+    reply.green  = ptr -> green;
+    reply.blue   = ptr -> blue;
+    reply.pixel  = pixel;
+    std::cerr << "Pixel : "; 
+    printHex(pixel);
     Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
     
-    // Add code to send to java if not a direct colour     
+    // Add code to send to java if not a direct colour and downloaded     
 }
 void allocNamedColor(xAllocNamedColorReq *ptr)
 {
@@ -870,16 +933,20 @@ for ( i = 1 ; i < bitoffset ; i++)
 return(ptr);
 }
 
-int convertColourTo24bit(int colourMap,int c)
+int convertColourTo24bit(int c)
 {
+// Not sure if this is needed as I think c is already 24bit
+    Screen *screen;
     Status status;
     XColor col;
 
     col.pixel = c;
-    std::cerr << "Convert colour to 24 bit " << std::endl;
-    std::cerr << "Colour Map : " << colourMap << " Colour : ";
+    std::cerr << "Convert colour to 24 bit Colour : ";
     printHex(c);
-    status = ::XQueryColor(Xwindow::display,colourMap,&col);          
+//    status = ::XQueryColor(Xwindow::display,colourMap,&col);
+    // Use 24bit colour map to do convesrion
+    screen = XDefaultScreenOfDisplay(Xwindow::display);
+    status = ::XQueryColor(Xwindow::display,XDefaultColormapOfScreen(screen),&col);      
     if (status == 0 )
        std::cerr << "XQueryColor failed" << std::endl;
     std::cerr << "RGB colour :  Red " << col.red << " Green " << col.green << " Blue " << col.blue << std::endl;
@@ -909,7 +976,7 @@ if (( mask & CWBackPixel ) == CWBackPixel )
    {
    value = getValueMask(mask,ptr,1);
    std::cerr << "BackGround Pixel : ";
-   winPtr -> setBackGroundColour(convertColourTo24bit(winPtr -> getColourMap(),value));
+   winPtr -> setBackGroundColour(convertColourTo24bit(value));
    printHex(value);
    }
 if (( mask & CWBorderPixel ) == CWBorderPixel )
@@ -917,7 +984,7 @@ if (( mask & CWBorderPixel ) == CWBorderPixel )
    value = getValueMask(mask,ptr,3);
    std::cerr << "Border Pixel : ";
    printHex(value);
-   winPtr -> setBorderColour(convertColourTo24bit(winPtr -> getColourMap(),value));
+   winPtr -> setBorderColour(convertColourTo24bit(value));
    }
 if (( mask & CWEventMask ) == CWEventMask )
    {
@@ -935,7 +1002,7 @@ if (( mask & CWColormap ) == CWColormap )
    }
 }
 
-void processGCmask(int mask,int colMap,int *ptr)
+void processGCmask(int mask,int *ptr)
 {
     int *wrk;
     int col;
@@ -945,7 +1012,7 @@ void processGCmask(int mask,int colMap,int *ptr)
        col = getValueMask(mask,ptr,2);
        std::cerr << "ForeGround : ";
        printHex(col);
-       col = convertColourTo24bit(colMap,col);
+       col = convertColourTo24bit(col);
        //std::cerr << "Converted Colour : ";
        //printHex(col);
        wrk = getPointerMask(mask,ptr,2);
@@ -959,7 +1026,7 @@ void processGCmask(int mask,int colMap,int *ptr)
        col = getValueMask(mask,ptr,3);
        std::cerr << "BackGround : ";
        printHex(col);
-       col = convertColourTo24bit(colMap,col);
+       col = convertColourTo24bit(col);
        wrk = getPointerMask(mask,ptr,3);
        *wrk = col;
        }
@@ -968,7 +1035,8 @@ void processGCmask(int mask,int colMap,int *ptr)
 void createGC(xCreateGCReq *ptr)
     {
     Xwindow *winPtr; 
-    int gc,mask,colMap;
+    int gc,mask;
+    int colMap;
     
     std::cerr << "Create GC" << std::endl;
     gc = ptr -> gc;
@@ -982,7 +1050,7 @@ void createGC(xCreateGCReq *ptr)
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    processGCmask(mask,colMap,(int *)ptr + (sizeof(xCreateGCReq) >> 2));
+    processGCmask(mask,(int *)ptr + (sizeof(xCreateGCReq) >> 2));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 
@@ -995,13 +1063,10 @@ void changeGC(xChangeGCReq *ptr)
     std::cerr << "GC : " << ptr -> gc << std::endl;
     // Change has no drawable !!!!!
     gcPtr = rootGC -> Address(ptr -> gc);
-    colMap = gcPtr -> getColourMap();
-    std::cerr << "Colour Map : ";
-    printHex(colMap);
     mask = ptr -> mask;
     std::cerr << "Mask : ";
     printHex(mask);
-    processGCmask(mask,colMap,(int *)ptr + (sizeof(xChangeGCReq) >> 2));
+    processGCmask(mask,(int *)ptr + (sizeof(xChangeGCReq) >> 2));
     Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
     }
 
@@ -1525,7 +1590,7 @@ int len,hl,ret;
 struct
   {
   xResourceReq req;
-  int data[256];
+  int data[MAXREQUESTSIZE];		// Maximum Request size set in connection setup
   } requestBuff;
 
 std::cerr << "Process X11 Request" << std::endl;
@@ -1546,30 +1611,30 @@ while ( len > 0 )       // Need to change to while bytes available
          return(-2);
          }
       }
-   // Get remaining length
+   // Get remaining length in bytes
    len = ( requestBuff.req.length - 1) << 2;
-   if ( len > 1024 )
+   std::cerr << "Request length : " << requestBuff.req.length << " bytes : " << (requestBuff.req.length << 2) << std::endl;
+   if ( requestBuff.req.length > MAXREQUESTSIZE )
       {
-      std::cerr << "X11 Request data > 1024 bytes" << std::endl;
+      std::cerr << "X11 Request data > MaxRequestSize : " << requestBuff.req.length << std::endl;
       return(-2);
       }
    if (( ret = Xwindow::X11sock -> readBlock((char *) &requestBuff.req.id,len)) != len )
       {
       if ( ret == 0 )
-	 	 {
+	 {
          std::cerr << "End of X11 Stream" << std::endl;
          return(0);
-	     }
+	 }
       else
-	     {
+	 {
          std::cerr << "Error reading Request data" << std::endl;
          return(-2);
-	     }
+	 }
       }
    len += 4;
    sequenceNum++;
-   std::cerr << "Request Type : " << (int) requestBuff.req.reqType <<
-   " Sequence Number : " << sequenceNum << std::endl;
+   std::cerr << "Request Type : " << (int) requestBuff.req.reqType << " Sequence Number : " << sequenceNum << std::endl;
    reportRequest( requestBuff.req.reqType );
    switch ( requestBuff.req.reqType )
       {
@@ -1735,6 +1800,10 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_UnmapWindow :
            unMapWindow((xResourceReq *) &requestBuff);
            break;
+
+      case X_PutImage :
+	   putImage((xPutImageReq *) &requestBuff);
+	   break;
       //************************************************//
       //  forward - Reply expected                      //
       //************************************************//
@@ -1758,7 +1827,6 @@ while ( len > 0 )       // Need to change to while bytes available
       case X_PolyFillRectangle :
       case X_PolyFillArc :
       case X_PolyText8 :
-      case X_PutImage :
            std::cerr << "Forward with WinID " << requestBuff.req.id << std::endl;
            // requestBuff.req.id = checkJavaWid(requestBuff.req.id);
            requestBuff.req.id = rootWin -> JavaWid(requestBuff.req.id);

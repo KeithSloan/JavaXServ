@@ -33,10 +33,8 @@ public class Xwindow
    int       		height;
    int       		border;
    int			depth;
-   byte 		Reds[] = new byte[256];
-   byte 		Greens[] = new byte[256];
-   byte 		Blues[] = new byte[256];
-
+   ColourMap		colMap;
+   
    public Xwindow(int i,XkeyBoard k,int p,int x,int y,int w,int h)
       {
       type    = 0;
@@ -47,6 +45,7 @@ public class Xwindow
       height  = h;
       index   = i;
       keyboard = k;
+      colMap = null;
       window = null;
       frame  = null;
       image   = null;
@@ -63,6 +62,7 @@ public class Xwindow
       type   = 1;
       index  = i; 
       parent = 0;
+      colMap = null;
       width  = w;
       height = h;
       depth  = d;
@@ -84,6 +84,22 @@ public class Xwindow
    private void Trail(String s)
    {
    System.out.println(s);
+   }
+
+   public static String hex(int n)
+   {
+   // call toUpperCase() if that's required
+   return String.format("0x%2s", Integer.toHexString(n & 0xFF)).replace(' ', '0');
+   }
+
+   public void printByteArray(byte array[],int len)
+   {
+   int i;
+   
+   for ( i=0; i < len; i++)
+       {
+       Trail(hex(array[i]));
+       }
    }
 
    public Graphics getGraphics()
@@ -224,6 +240,11 @@ public class Xwindow
       repaint();
    }
 
+   public void setColourMap(ColourMap cm)
+   {
+   colMap = cm;
+   }
+
 
    public void putImage(Image img,int x,int y,int w,int h)
    {
@@ -239,14 +260,19 @@ public class Xwindow
       BufferedImage img;
       Point pt = new Point(x,y);
            
-      DataBuffer dBuffer = new DataBufferByte(imgBuff, width * height);
-      WritableRaster wr = Raster.createPackedRaster(dBuffer,width,height,bits,pt);
-      IndexColorModel cm = new IndexColorModel(bits,bits,Reds,Greens,Blues);
-      img = new BufferedImage(cm, wr, false, null);
-      
+      Trail("New Data Buffer byte : "+imgBuff.length);
+//    Uncomment for debugging
+//    printByteArray(imgBuff,imgBuff.length);
+      DataBuffer dBuffer = new DataBufferByte(imgBuff, w * h);
+      Trail("Packed Raster - bits : "+bits);
+//      WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,pt);
+      WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,null);
+      Trail("Colour Map : "+colMap.mapId);
+      IndexColorModel cm = colMap.returnIndexColModel(bits);
+      img = new BufferedImage(cm, wr, false, null);   
       Trail("drawImage "+bits+" w "+w+" h "+h);   
       g = getGraphics();
-      g.drawImage(img,0,0,w,h,null);
+      g.drawImage(img,x,y,w,h,null);
       repaint();
    }
 

@@ -1,10 +1,11 @@
 #include <iostream>
 #include "GraphicContext.h"
+#include "ColourMap.h"
     
 GraphicContext::GraphicContext()
     {
     id = 0;
-    colourMap = 0;
+    colourMap = NULL;
     GCfirst = this;
     GClast = this;
     GCnext = NULL;

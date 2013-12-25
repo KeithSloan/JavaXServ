@@ -33,6 +33,7 @@ public final class Xrequest extends Xsocket
   Font     testFont;
   Xwindow  Windows[] = new Xwindow[1024];
   GraphicsContextSet GCSet = new GraphicsContextSet();
+  ColourMapSet ColMapSet = new ColourMapSet();
   IndexColorModel im,wicm;
   // The following are passed from action to paint 
   int parm;
@@ -498,6 +499,7 @@ public int action()
    byte textBuff[] = new byte[257];
    String s;
    Graphics gp,gi;
+   ColourMap cm;
    Xframe baseFrame;
 
    Trail("About to read Request - bytes available :"+sock.available());
@@ -958,6 +960,25 @@ public int action()
       case 127 :
     	  System.out.println("No Op");
     	  break;
+
+      case 200 :
+	  i = sock.readCard32();
+	  m = sock.readCard32();
+	  Trail("Set ColourMap for Drawable : "+i);
+	  cm = ColMapSet.address(m);
+	  Windows[i].setColourMap(cm);
+	  break;
+
+      case 201 :
+          m = sock.readCard32();
+	  i = sock.readCard16();
+	  sock.readCard16(); // Filler
+          Trail("Set ColourMap - map :"+m+" entries : "+i);
+          cm = new ColourMap(m,i);
+	  Trail("Add to set Map : "+m);
+          ColMapSet.add(cm);
+	  cm.readColourMap(sock,i);
+      	  break;
 
       default : // Op code for which I have no code yet
     	  printOperation(opcode);
