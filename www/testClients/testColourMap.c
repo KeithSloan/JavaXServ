@@ -48,7 +48,7 @@ Visual    visual;
 Colormap  cm;
 
 memset(&visual,0,sizeof(visual));
-visual.visualid = 34;
+visual.visualid = 33;
 //visual.class = StaticColor;
 //visual.class = PseudoColor;
 visual.class = DirectColor;
