@@ -17,6 +17,7 @@
 
 import java.awt.*;
 import java.awt.image.*;
+import java.awt.color.*;
 
 public class Xwindow
    {
@@ -256,20 +257,42 @@ public class Xwindow
 
    public void putImage(byte imgBuff[],int bits,int lp,int x,int y,int w,int h)
    {
+      int i;
+      byte c = (byte) 0xFF;
       Graphics g;
       BufferedImage img;
       Point pt = new Point(x,y);
            
       Trail("New Data Buffer byte : "+imgBuff.length);
 //    Uncomment for debugging
-//    printByteArray(imgBuff,imgBuff.length);
+//      for ( i=0; i < imgBuff.length; i++ )
+//          {
+//	  imgBuff[i] = (byte) (c - imgBuff[i]);
+//          }
+//      printByteArray(imgBuff,imgBuff.length);
       DataBuffer dBuffer = new DataBufferByte(imgBuff, w * h);
-      Trail("Packed Raster - bits : "+bits);
-//      WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,pt);
-      WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,null);
-      Trail("Colour Map : "+colMap.mapId);
-      IndexColorModel cm = colMap.returnIndexColModel(bits);
-      img = new BufferedImage(cm, wr, false, null);   
+      Trail("Packed Raster - bits : "+bits);    
+      if ( bits < 24 )
+         {
+	 //      WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,pt);
+	 WritableRaster wr = Raster.createPackedRaster(dBuffer,w,h,bits,null);
+         Trail("Colour Map : "+colMap.mapId);
+         IndexColorModel icm = colMap.returnIndexColModel(bits);
+	 img = new BufferedImage(icm, wr, false, null);
+         }
+      else
+	 {
+	 Trail("Direct Colour");
+         WritableRaster wr = Raster.createBandedRaster(DataBuffer.TYPE_BYTE,w,h,4,null);
+         wr.setDataElements(0, 0, w, h, imgBuff);
+
+         ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+
+         ComponentColorModel ccm = new ComponentColorModel(sRGB, true, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
+	 //DirectColorModel dcm = new DirectColorModel(bits,0xFF0000,0xFF00,0xFF);
+	 //img = new BufferedImage(dcm, wr, false, null);
+         img = new BufferedImage(ccm,wr,false,null);
+	 }
       Trail("drawImage "+bits+" w "+w+" h "+h);   
       g = getGraphics();
       g.drawImage(img,x,y,w,h,null);

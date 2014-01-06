@@ -48,7 +48,7 @@ extern "C"              // C includes
 #define STACKSIZE   1024
 #define FIRSTKEY       9
 #define TIMEOUT	     600
-#define MAXREQUESTSIZE 1024
+#define MAXREQUESTSIZE 8192
 #define COLOURMAPSIZE 256
 
 #define DEBUG
@@ -139,11 +139,14 @@ struct
   xConnSetup       setup;
   char             vendor[32];
   xPixmapFormat    format1;
-  xPixmapFormat    format8;
+//  xPixmapFormat    format8;
+  xPixmapFormat    format24;
   xWindowRoot      window;
   xDepth           depth1;
-  xDepth           depth8;
-  xVisualType      visual8;
+//  xDepth           depth8;
+//  xVisualType      visual8;
+  xDepth	depth24;
+  xVisualType	visual24;
   } reply;
 
 std::cerr << "Connection Setup Read"<< std::endl;
@@ -166,8 +169,8 @@ reply.setup.numRoots = 1;
 reply.setup.numFormats = 2;
 reply.setup.imageByteOrder = MSBFirst;
 reply.setup.bitmapBitOrder = MSBFirst;
-reply.setup.bitmapScanlineUnit = 8;
-reply.setup.bitmapScanlinePad = 8;
+reply.setup.bitmapScanlineUnit = 32;
+reply.setup.bitmapScanlinePad = 32;
 reply.setup.minKeyCode = FIRSTKEY;
 reply.setup.maxKeyCode = 141;
 reply.setup.pad2 = 0;
@@ -175,9 +178,12 @@ strcpy(reply.vendor,"JavaXServ");
 reply.format1.depth = 1;
 reply.format1.bitsPerPixel = 1;
 reply.format1.scanLinePad = 8;          // Trace is in hex
-reply.format8.depth = 8;
-reply.format8.bitsPerPixel = 8;
-reply.format8.scanLinePad  = 8;
+//reply.format8.depth = 8;
+//reply.format8.bitsPerPixel = 8;
+//reply.format8.scanLinePad  = 8;
+reply.format24.depth = 24;
+reply.format24.bitsPerPixel = 32;
+reply.format24.scanLinePad  = 32;
 reply.window.windowId = rootWin -> X11windowId();
 // display is a global variable
 reply.window.defaultColormap = rootWin -> getColourMap(); 
@@ -190,19 +196,29 @@ reply.window.mmHeight = 112;
 reply.window.minInstalledMaps = 1;
 reply.window.maxInstalledMaps = 1;
 reply.window.rootVisualID = 0x21;
-reply.window.rootDepth = 8;
+reply.window.rootDepth = 24;
 reply.window.nDepths = 2;
 reply.depth1.depth = 1;
 reply.depth1.nVisuals = 0;
-reply.depth8.depth = 8;
-reply.depth8.nVisuals = 1;
-reply.visual8.visualID = 0x21;
-reply.visual8.c_class = PseudoColor;  // Need to support 8 bit Pseudocolour for Old Applications
-reply.visual8.bitsPerRGB = 8;
-reply.visual8.colormapEntries = 512;
-reply.visual8.redMask = 0xFF0000;
-reply.visual8.greenMask = 0xFF00;
-reply.visual8.blueMask = 0xFF;
+//reply.depth8.depth = 8;
+//eply.depth8.nVisuals = 1;
+//reply.visual8.visualID = 0x21;
+//reply.visual8.c_class = PseudoColor;  // Need to support 8 bit Pseudocolour for Old Applications
+//reply.visual8.bitsPerRGB = 8;
+//reply.visual8.colormapEntries = 512;
+//reply.visual8.redMask = 0xFF0000;
+//reply.visual8.greenMask = 0xFF00;
+//reply.visual8.blueMask = 0xFF;
+reply.depth24.depth = 24;
+reply.depth24.nVisuals = 1;
+reply.visual24.visualID = 0x21;
+reply.visual24.c_class = DirectColor;  
+reply.visual24.bitsPerRGB = 8;
+reply.visual24.colormapEntries = 512;
+reply.visual24.redMask = 0xFF0000;
+reply.visual24.greenMask = 0xFF00;
+reply.visual24.blueMask = 0xFF;
+
 // Need to add support for 24bit true colour for new applications
 Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 std::cerr << "Reply Authourized" << std::endl;
@@ -708,6 +724,8 @@ Xwindow::javasock -> write((char *) &xSendDrawableColMapReq,sizeof(xSendDrawable
 
 void putImage(xPutImageReq *ptr)
 {
+int i;
+int *wrkPtr;
 Xwindow   *winPtr; 
 int       colmap,jw;
 ColourMap *mapPtr;
@@ -731,10 +749,16 @@ if ( ptr -> depth < 24 )
    }
 std::cerr << "Send PutImage Request" << std::endl;
 ptr -> drawable = jw;
+// Printout for debugging
+//wrkPtr = (int *) ptr + (sizeof(xPutImageReq) >> 2);
+//for (i = 0; i < 16; i++ )
+//    {
+//    printHex(*wrkPtr);
+//    std::cerr << " " << std::endl;
+//    wrkPtr++;
+//    } 
 Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
 }
-
-
 
 void queryExtension(xQueryExtensionReq *ptr)
 {
@@ -806,11 +830,14 @@ void allocColor(xAllocColorReq *ptr)
           << " Green : " << ((ptr -> green) >> 8)
           << " Blue  : " << ((ptr -> blue) >> 8)
           << std::endl;
-    xcolour = ((ptr -> red >> 8) << 16) | (( ptr -> green >> 8) << 8) | (ptr->blue >> 8);
+    // Java PutImage requires colour to be RGBA where A is alpha
+    xcolour = ((ptr -> red >> 8) << 24) | (( ptr -> green >> 8) << 16) | ((ptr->blue >> 8) << 8) | 0xFF;
     std::cerr << "Colour : ";
     printHex(xcolour);
-    mapPtr = rootColourMap -> Address(ptr-> cmap);
-    pixel = mapPtr -> AllocColour(xcolour);  
+    // uncomment if deal with AllocColor ourselves
+    //
+    //mapPtr = rootColourMap -> Address(ptr-> cmap);
+    //ptr -> pixel = mapPtr -> AllocColour(xcolour);  
     // Check for -1 map full#
 
     // Does not work if local XServer only supports 24bit
@@ -821,7 +848,9 @@ void allocColor(xAllocColorReq *ptr)
     //status = XAllocColor(Xwindow::display,ptr -> cmap,&xcolour);          
     //if (status == 0 )
     //   std::cerr << "XAllocColor failed" << std::endl;
-       
+      
+    // Just send back as per allocate request if only negotiated 24bit colours
+    pixel = xcolour;
     // Send the Reply
     std::memset(&reply,0,sizeof(reply));
     reply.type = 1;
