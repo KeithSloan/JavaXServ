@@ -22,6 +22,9 @@ Improve Java Class - Linked Lists
 X_ClipRectangle - uses GC not sure how to implement
 X_ReparentWindow
 
+For 24 bit putimage colours are RGBA as required by Java where A has to be 0xFF. In other places colours are 0x00RRGGBB
+need to unify two approaches.
+
 Known issues with test clients
 ==============================
 xclock 	  - seems to need XOR on draw, not sure how this is set or default
