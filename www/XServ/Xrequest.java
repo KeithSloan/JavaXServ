@@ -679,9 +679,9 @@ public int action()
           w = sock.readCard16();
           h = sock.readCard16();
           Trail("Copy Area : "+src+" x "+sx+" y "+sy+" w "+w+" h "+h);
-          // Trail(" To "+dst+" x "+sx+" y "+sy);
-          // img = Windows[src].getImage(sx,sy,w,h);
-          // Windows[dst].putImage(img,dx,dy);
+          Trail(" To "+dst+" x "+dx+" y "+dy);
+          img = Windows[src].getImage(sx,sy,w,h);
+          Windows[dst].putImage(img,dx,dy);
 	  }
           break;
  
@@ -700,10 +700,11 @@ public int action()
           w   = sock.readCard16();
           h   = sock.readCard16();
           d   = sock.readCard32();
-          // Trail("Copy Plane : "+src+" x "+sx+" y "+sy+" w "+w+" h "+h);
-          // Trail(" To "+dst+" x "+sx+" y "+sy);
-          // img = Windows[src].getImage(sx,sy,w,h);
-          // Windows[dst].putImage(img,dx,dy);
+          Trail("Copy Plane : "+src+" x "+sx+" y "+sy+" w "+w+" h "+h);
+          Trail(" To "+dst+" x "+dx+" y "+dy);
+          img = Windows[src].getImage(sx,sy,w,h);
+ 	  Windows[dst].putImage(img,dx,dy);
+          //Windows[1].putImage(img,10,150);
 	  }
           break;
 
@@ -907,8 +908,9 @@ public int action()
           Trail("PutImage : "+jw+" x "+x+" y "+y+" w : "+w+" h : "+h+" size "+i);
           imageBuff = new byte[i];
           Trail("Bytes Read "+sock.readBuff(imageBuff,i)+" len "+i);
-          Windows[jw].putImage(imageBuff,b,p,x,y,w,h);
-          // Windows[0].drawImage(Windows[jw].getImage(),debugX,debugY,100,100);
+	  Windows[jw].putImage(imageBuff,b,p,x,y,w,h);
+	  // Output debugging image
+          //Windows[1].putImage(Windows[jw].getImage(),debugX,debugY);
           debugX += 100;
           }
           break;

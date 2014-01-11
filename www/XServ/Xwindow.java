@@ -28,6 +28,8 @@ public class Xwindow
    BufferedImage	image;
    int       		parent;		// needed for Reconfigure Window 
    int	     		index;	
+   int			xMargin;	// There has to be a better way than having margins for Graphic operations
+   int			yMargin;
    int       		xPos;
    int       		yPos;
    int       		width;
@@ -51,6 +53,8 @@ public class Xwindow
       frame  = null;
       image   = null;
       window  = null;
+      xMargin = 0;
+      yMargin = 0;
       } 
 
      // Pixmap Constructor have to pass an on screen component i.e. root win 
@@ -67,6 +71,8 @@ public class Xwindow
       width  = w;
       height = h;
       depth  = d;
+      xMargin = 0;
+      yMargin = 0;
       switch (d)
       	{
       	case 1 :
@@ -105,9 +111,9 @@ public class Xwindow
 
    public Graphics getGraphics()
    {
-	   if (image != null ) return(image.getGraphics());
-	   if ( parent == 0 ) return(frame.getGraphics());
-	   return window.getGraphics();
+   if (image != null ) return(image.getGraphics());
+   if ( parent == 0 ) return(frame.getGraphics());
+   return window.getGraphics();
    }
 
    public Xwindow create(int i,int p,int x,int y,int w, int h ,int b, int bc,int bgc)
@@ -133,6 +139,8 @@ public class Xwindow
    public void createFrame(int bgc)
    {
    frame = new Xframe(index,keyboard,width,height,bgc);
+   xMargin = 5;
+   yMargin = 25;
    }
    
    public void createPanel(int b,int bc,int bgc)
@@ -247,12 +255,14 @@ public class Xwindow
    }
 
 
-   public void putImage(Image img,int x,int y,int w,int h)
+   public void putImage(Image img,int x,int y)
    {
-      Graphics g = getGraphics();
+   Graphics g = getGraphics();
  
-//      g.drawImage(img,x,y,w,h,this);
-      repaint();
+   Trail("putImage");
+   //   g.drawImage(img,x,y,w,h,this);
+   g.drawImage(img,x+xMargin,y+yMargin,null);
+   repaint();
    }
 
    public void putImage(byte imgBuff[],int bits,int lp,int x,int y,int w,int h)
@@ -284,7 +294,7 @@ public class Xwindow
          ComponentColorModel ccm = new ComponentColorModel(sRGB, true, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
 	 img = new BufferedImage(ccm,wr,false,null);
 	 }
-      Trail("drawImage "+bits+" w "+w+" h "+h);   
+      Trail("drawImage bits : "+bits+" w "+w+" h "+h);   
       g = getGraphics();
       g.drawImage(img,x,y,w,h,null);
       repaint();
@@ -292,10 +302,12 @@ public class Xwindow
 
    public Image getImage(int x,int y,int w,int h)
    {
-	   Trail("getImage");
+   Trail("getImage");
  //     return(createImage(new FilteredImageSource(image.getSource()
  //                                ,new CropImageFilter(x,y,w,h))));
-	   return((Image) image);
+   if ( image == null )
+      Trail("Null Image");
+   return((Image) image);
    }
 
    // Used for debugging
