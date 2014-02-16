@@ -1,0 +1,27 @@
+Install instructions for Raspbian
+=================================
+
+   sudo apt-get install libx11-dev libxpm-dev xvfb
+
+   git clone git://git.code.sf.net/p/javaxserv/code javaxserv-code
+
+   cd javaserv-code
+   make
+
+To symbolically Link to Apache directory
+========================================
+    cd www
+    ln -s . /var/www/DemoJavaXServ
+    cd ..
+
+To run JavaXServ
+================A
+    From directory javaserv-code/JavaXServ
+
+    cd JavaXServ
+    Xvfb :2 &
+    export DISPLAY=:2.0
+    ./javaXServ
+
+From a Java Enabled Browser Access the DemoJavaServ directory
+=============================================================
