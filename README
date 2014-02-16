@@ -17,5 +17,17 @@ The directory www should be made available to a web server for example apache. F
 
 The end user needs access to a Java enabled browser. For testing I use Chromimum on a machine with Oracle Java(tm) SE installed see http://www.oracle.com/technetwork/java/javase/documentation/index.html
 
+JavaXServ is an unsigned app.
+
+My understanding is that you have to pay money to get a certificate to
+create signed apps.
+
+Anyway to run you need to set Security to Medium
+You do this with the Java ControlPanel
+which is normally in
+
+   /usr/lib/jvm/<java version>/bin
+
+
 
 

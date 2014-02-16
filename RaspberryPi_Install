@@ -8,13 +8,18 @@ Install instructions for Raspbian
    cd javaserv-code
    make
 
-To symbolically Link to Apache directory
-========================================
+To Setup Demo 
+=============
+
+Install X11 apps
+    sudo apt-get install x11-apps
+
+symbolically Link to Apache directory
     ln -s ~/javaxserv-code/www /var/www/DemoJavaXServ
     cd ..
 
 To run JavaXServ
-================A
+=================
     From directory javaserv-code/JavaXServ
 
     cd JavaXServ
@@ -24,3 +29,14 @@ To run JavaXServ
 
 From a Java Enabled Browser Access the DemoJavaServ directory
 =============================================================
+     
+    JavaXServ is an unsigned app.
+
+    My understanding is that you have to pay money to get a certificate to
+    create signed apps.
+
+    Anyway to run you need to set Security to Medium
+    You do this with the Java ControlPanel
+    which is normally in
+ 
+     /usr/lib/jvm/<java version>/bin 
