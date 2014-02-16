@@ -10,8 +10,7 @@ Install instructions for Raspbian
 
 To symbolically Link to Apache directory
 ========================================
-    cd www
-    ln -s . /var/www/DemoJavaXServ
+    ln -s ~/javaxserv-code/www /var/www/DemoJavaXServ
     cd ..
 
 To run JavaXServ
