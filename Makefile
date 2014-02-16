@@ -1,12 +1,7 @@
-all: JavaXServ XServ testclients
+all: 
 
-JavaXServ:
 	cd ./JavaXServ && $(MAKE) all
-
-XServ:
 	cd ./www/XServ && $(MAKE) all
-
-testclients:
 	cd ./www/testClients && $(MAKE) all
 
 
