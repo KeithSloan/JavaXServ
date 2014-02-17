@@ -16,25 +16,14 @@ Webserver needs to be a static addresss as does machine where JavaXServ will run
 Install X11 apps
     sudo apt-get install x11-apps
 
-symbolically Link to Apache directory
-    ln -s ~/javaxserv-code/www /var/www/DemoJavaXServ
+Copy www file to /var/www
+    sudo cp -r  ~/javaxserv-code/www /var/www/
     cd ..
 
+The two files config.php and configJar.php in www/Demo
+need to be edited to reflect the IP address of the WebServer
 
-For the supplied html files to work two entries need to be added to /etc/hosts
-for hostnames WebServer and JavaXServ
-
-For example if the static address is 192.168.1.2
-
-Then add
-192.168.1.2    WebServer
-192.168.1.2    JavaXServ
-
-WebServer is where the Java code will be served from i.e. the Webserver
-JavaXServ should be the machine where the JavaXServ process is being run.
-
-/etc/hosts seems to allow duplicate IP addresses, but different names.
-
+Java Security needs Machine where JavaXServ runs to be the same as WenServer
 
 To run JavaXServ
 =================
@@ -45,7 +34,7 @@ To run JavaXServ
     export DISPLAY=:2.0
     ./javaXServ
 
-From a Java Enabled Browser Access the DemoJavaServ directory
+From a Java Enabled Browser Access the Demo directory in www
 =============================================================
      
     JavaXServ is an unsigned app.

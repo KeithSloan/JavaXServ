@@ -972,6 +972,8 @@ int convertColourTo24bit(int c)
     col.pixel = c;
     std::cerr << "Convert colour to 24 bit Colour : ";
     printHex(c);
+    // Make sure valid integer
+    col.pixel = col.pixel & 0x00FFFFFF;
 //    status = ::XQueryColor(Xwindow::display,colourMap,&col);
     // Use 24bit colour map to do convesrion
     screen = XDefaultScreenOfDisplay(Xwindow::display);
