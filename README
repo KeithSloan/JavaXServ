@@ -17,19 +17,10 @@ The webserver should have a static IP address
 .
 The directory www should be made available to a web server for example apache. For example via a soft symbolic link.
 
-For the supplied html files to work two entries need to be added to /etc/hosts
-for hostnames WebServer and JavaXServ
+The two files config.php and configJar.php should be edited and the
+correct IP address inserted.
 
-For example if the static address is 192.168.1.2
-
-Then add
-192.168.1.2    WebServer
-192.168.1.2    JavaXServ
-
-WebServer is where the Java code will be served from i.e. the Webserver
-JavaXServ should be the machine where the JavaXServ process is being run.
-
-/etc/hosts seems to allow duplicate IP addresses, but different names.
+For Java Security JavaXServ must run on the same machine as the Webserver where the Java applets are stored.
 
 The end user needs access to a Java enabled browser. For testing I use Chromimum on a machine with Oracle Java(tm) SE installed see http://www.oracle.com/technetwork/java/javase/documentation/index.html
 
