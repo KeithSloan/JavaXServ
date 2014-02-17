@@ -11,12 +11,30 @@ Install instructions for Raspbian
 To Setup Demo 
 =============
 
+Webserver needs to be a static addresss as does machine where JavaXServ will run
+
 Install X11 apps
     sudo apt-get install x11-apps
 
 symbolically Link to Apache directory
     ln -s ~/javaxserv-code/www /var/www/DemoJavaXServ
     cd ..
+
+
+For the supplied html files to work two entries need to be added to /etc/hosts
+for hostnames WebServer and JavaXServ
+
+For example if the static address is 192.168.1.2
+
+Then add
+192.168.1.2    WebServer
+192.168.1.2    JavaXServ
+
+WebServer is where the Java code will be served from i.e. the Webserver
+JavaXServ should be the machine where the JavaXServ process is being run.
+
+/etc/hosts seems to allow duplicate IP addresses, but different names.
+
 
 To run JavaXServ
 =================
@@ -39,4 +57,6 @@ From a Java Enabled Browser Access the DemoJavaServ directory
     You do this with the Java ControlPanel
     which is normally in
  
-     /usr/lib/jvm/<java version>/bin 
+     /usr/lib/jvm/<java version>/bin/ControlPanel 
+
+    It is also advisable to have the Java Console enabled.
