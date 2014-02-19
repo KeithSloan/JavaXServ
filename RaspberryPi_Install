@@ -31,7 +31,7 @@ To run JavaXServ
     From directory javaserv-code/JavaXServ
 
     cd JavaXServ
-    Xvfb :2 &
+    Xvfb :2 -screen 0 800x600x24 &
     export DISPLAY=:2.0
     ./javaXServ
 
