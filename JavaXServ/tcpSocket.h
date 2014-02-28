@@ -35,7 +35,7 @@ class SockSet
        int       maxfd;
        
    public:
-		SockSet(void);
+	SockSet(void);
         ~SockSet(void);
         void init(void);
         void addReadMask(tcpSocket *);

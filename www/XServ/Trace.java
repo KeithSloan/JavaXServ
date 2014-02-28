@@ -17,7 +17,7 @@
 
 public class Trace
    {
-   byte  traceFlag = 0;
+   byte  traceFlag = 1;
 
    public Trace()
       {

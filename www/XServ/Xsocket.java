@@ -25,22 +25,23 @@ import java.io.*;
 // Add data then set length
 public class Xsocket
    {
-   SocketPermission		sp;
-   ServerSocket			serverSock;
-   Socket				sock;
+   SocketPermission	sp;
+   ServerSocket		serverSock;
+   Socket		sock;
    BufferedInputStream  BuffIn;
    BufferedOutputStream BuffOut;
    DataInputStream  	sockIn;
    DataOutputStream 	sockOut;
-   int          		byteOrder;
-   byte		       		buffer[];
-   int          		insertPoint;
-   Trace				trace = new Trace();
+   int          	byteOrder;
+   byte	       		buffer[];
+   int          	insertPoint;
+   Trace	        trace = new Trace();
 
    public Xsocket()
       {
       Trail("Buffer Init");
-      buffer = new byte[1024];
+      System.out.println("Buffer Size 8192");
+      buffer = new byte[8192];
       }
 
    private void Trail(String s)
@@ -110,13 +111,13 @@ public class Xsocket
     public boolean open(String host, int port)
       {
       trace.Entry(0x02,"open port host: "+host+" port : "+port);
-      buffer = new byte[4096];
+      //buffer = new byte[4096];
       sp = new SocketPermission(host+":" + port, "connect");
 
       try
          {
          sock    = new Socket(host,port);
-         BuffIn = new BufferedInputStream(sock.getInputStream(),4096);
+         BuffIn = new BufferedInputStream(sock.getInputStream(),8192);
          sockIn = new DataInputStream(BuffIn);
          BuffOut = new BufferedOutputStream(sock.getOutputStream());
          sockOut = new DataOutputStream(BuffOut);
@@ -293,27 +294,27 @@ public class Xsocket
       int  i;
 
       trace.Entry(0x01,"Add 32 bit : "+v);
-      // System.out.println(insertPoint+" Add 32 bit"+v);
+      System.out.println(buffer.length+" "+insertPoint + " Add 32 bit"+v);
       switch ( byteOrder )
          {
          case 0x42 :
-        	 // Insert point goes 3,2,1,0
-        	 insertPoint += 3;
-        	 for ( i = 0; i < 4; i++)
-	          	 {
+       	     // Insert point goes 3,2,1,0
+       	     insertPoint += 3;
+             for ( i = 0; i < 4; i++)
+	         {
                  // System.out.println(insertPoint + " MSB first "+ v % 256 );
-        		 buffer[insertPoint--] = (byte)( v % 256 );
-        		 v = v / 256;
-	          	 }
-             insertPoint += 5;
+                 buffer[insertPoint--] = (byte)( v % 256 );
+                 v = v / 256;
+	         }
+             insertPoint += 4;
              break;
 	 
          case 0x6C :
-        	 for ( i = 0; i < 4; i++)
-        	 	 {
-        		 buffer[insertPoint++] = (byte)( v % 256 );
-        		 v = v / 256;
-        	 	 }
+             for ( i = 0; i < 4; i++)
+         	 {
+        	 buffer[insertPoint++] = (byte)( v % 256 );
+        	 v = v / 256;
+         	 }
              break;
 
          default :

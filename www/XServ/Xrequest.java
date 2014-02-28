@@ -41,9 +41,9 @@ public final class Xrequest extends Xsocket
   int wordLen;		// Length in 4 bytes words
   int debugX = 0;
   int debugY = 200; 
-  byte Reds[] = new byte[256];
-  byte Greens[] = new byte[256];
-  byte Blues[] = new byte[256];
+  byte Reds[] = new byte[512];
+  byte Greens[] = new byte[512];
+  byte Blues[] = new byte[512];
   int  numColors;
 
 private void Trail(String s)
@@ -312,22 +312,32 @@ public void AllocNamedColor(int len)
 
 public void QueryColors(int num)
    {
-   int i;
+   int i,cm;
    Trail("Read Colour Map - Colours : "+num);
-   sock.readCard32();  	// Colour Map
-
+   cm = sock.readCard32();  	// Colour Map
+   Trail("Colour Map : "+cm);  	
    sock.replyHeader4(1,0,sequenceNum);
    sock.addCard32(num << 1);	
+//   sock.addCard32(8+ (num << 1));	
    sock.addCard16(num);	
    sock.addFill(22);
    while ( num > 0 )
       {
-      Trail("Read Pixel");
       i = sock.readCard32();
-      sock.addCard16(Reds[i]); 
-      sock.addCard16(Greens[i]); 
-      sock.addCard16(Blues[i]); 
-      sock.addCard16(0); 
+      Trail("Read Pixel : "+i);
+      if ( i < 512 )  // If a valid entry
+         {
+         sock.addCard16(Reds[i]); 
+         sock.addCard16(Greens[i]); 
+         sock.addCard16(Blues[i]); 
+         sock.addCard16(0); 
+         }
+      else
+         {
+         Trail("num : "+num);
+         sock.addCard32(0);
+         sock.addCard32(0);
+         }
       num--;
       }
    sock.flush();

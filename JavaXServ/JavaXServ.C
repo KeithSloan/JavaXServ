@@ -428,7 +428,7 @@ reply.nCharInfos = reply.maxCharOrByte2 - reply.minCharOrByte2 + 1;
 std::cerr << "Number of Chars : " << reply.nCharInfos << std::endl;
 std::cerr << "Number of properties : " << reply.nFontProps << std::endl;
 std::cerr << "Size of reply : " << sizeof(reply) / 4 << std::endl;
-reply.length = (sizeof(reply)/4) - 8 + (2 * reply.nFontProps) + ( 3 * reply.nCharInfos); // Length is additional length so miuns 8 byte header
+reply.length = (sizeof(reply)/4) - 8 + (2 * reply.nFontProps) + ( 3 * reply.nCharInfos); // Length is additional length so minus 8 byte header
 std::cerr << "Reply Length : "<< reply.length << std::endl;
 Xwindow::X11sock -> assert();
 Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
@@ -1171,7 +1171,8 @@ processWindowMask(winPtr,mask,(int *) ptr + (sizeof(xChangeWindowAttributesReq) 
 //
 //      Send Config Notify Event
 //
-winPtr -> ConfigNotify(sequenceNum);
+// Temp comment for Raspberry Pi
+//winPtr -> ConfigNotify(sequenceNum);
 //
 //      Note More events than this were generated for xclock but bugs since
 //
@@ -1603,6 +1604,14 @@ void reportRequest(int type)
       case X_ReparentWindow :
 	   std::cerr << "X_ReparentWindow" << std::endl;
 	   break;
+
+      case X_GrabServer :
+           std::cerr << "X_GrabServer" << std::endl;
+	   break;
+           
+      case X_UngrabServer :
+           std::cerr << "X_UngrabServer" << std::endl;
+	   break;
            
       case 129 :     // Shape extension
            std::cerr << "X_ShapeExtension" << std::endl;
@@ -1894,6 +1903,8 @@ while ( len > 0 )       // Need to change to while bytes available
 
       case X_SetClipRectangles : // Is passed GC not sure how to handle. Is not passed window
 	   			      
+      case X_GrabServer : 
+      case X_UngrabServer : 
       case X_FreeGC :
       case X_CreateGlyphCursor :
       case    129 :     // Shape extension
@@ -1956,7 +1967,7 @@ struct
     xGenericReply reply;
     xEvent        event;
     } u;
-  char data[1024];
+  char data[8196];
   } buff;
 
 std::cerr << "Process Replies" << std::endl;
@@ -1976,6 +1987,7 @@ if (( len =  Xwindow::javasock -> readBlock((char *) &buff,32)) != 32 )
       }
    }
 len = buff.u.reply.length << 2;
+std::cerr << "Reply length : "<< buff.u.reply.length << " len : " << len << std::endl;
 if ( len > 0 )
    {
    if (( ret = Xwindow::javasock -> readBlock(buff.data,len)) != len )
@@ -1988,6 +2000,7 @@ if ( len > 0 )
       else
          {
          std::cerr << "Error Reading additional data from java" << std::endl;
+         std::cerr << "Reply Length : "<< len << " Data Read  : "<< ret << std::endl;
          return(-2);
          }
       }
