@@ -87,7 +87,7 @@ class Xwindow
        void    SendJavaMapFlush();
        void    MapWindow(tcpSocket *sockPtr,int state,int num);
        int     UnMapWindow(void);
-       void    MapSubWindows(tcpSocket *sockPtr,int num);
+       void    MapSubWindows(int num);
        void    GetGeometry(tcpSocket *sockPtr,int root,int num);
        void    QueryTree(tcpSocket *sockPtr,int root,int num);
        void    ConfigNotify(tcpSocket *sockPtr,int num);

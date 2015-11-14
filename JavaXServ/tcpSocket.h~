@@ -42,7 +42,6 @@ class SockSet
         void addReadMask(tcpSocket *);
 	void removeReadMask(tcpSocket *);
         int  select(int sec);
-	int  wait(void);
         int  isset(tcpSocket *);
    };
 

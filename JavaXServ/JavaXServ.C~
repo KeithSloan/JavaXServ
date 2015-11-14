@@ -2267,7 +2267,7 @@ do
 	    ret = processRequests(X11sock[i]);
 	    if ( ret == 0 )   // Other end has closed connection
 	       {
-	       std::cerr << "Connection closed : " << s << " : " << i << " : " << X11sock[i] -> sockfd << std::endl;
+		std::cerr << "Connection closed : " << s << " : " << i << " : " << X11sock[i] -> sockfd << std::endl;
 	       sockset -> removeReadMask(X11sock[i]);
 	       X11sock[i] -> close();
                sockset -> addReadMask(X11Serv);

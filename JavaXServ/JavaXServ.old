@@ -18,10 +18,7 @@
 
 #include <iostream>
 #include <cstring>
-#include <string.h>
 #include <unistd.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
 // #include "tcpSocket.h"
 #include "Xwindow.h"
 #include "GraphicContext.h"
@@ -44,9 +41,7 @@ extern "C"              // C includes
 #include <X11/Xlib.h>
 #include <errno.h>
 }
-//--------------------------------------//
-// Constants
-//--------------------------------------//
+
 #define PORT        6789
 #define MAXFONTS      64
 #define MAXFONTNAME  256
@@ -55,7 +50,6 @@ extern "C"              // C includes
 #define TIMEOUT	     600
 #define MAXREQUESTSIZE 8192
 #define COLOURMAPSIZE 256
-#define X11SESSIONS   4
 
 #define DEBUG
 
@@ -70,12 +64,10 @@ extern char **environ;
 // Globals
 //--------------------------------------//
 char      byteOrder;
-int       setupPid1;
-int       setupPid2;
+int       setupPid;
+tcpSocket *X11Serv;
+tcpSocket *javaServ;
 int       sequenceNum = 0;
-tcpSocket* X11Serv;			// Main X11 Server socket
-tcpSocket* javaServ;			// Main Java Server Socket
-tcpSocket* X11sock[X11SESSIONS];
 Xwindow   *rootWin;
 GraphicContext *rootGC;
 ColourMap *rootColourMap = new ColourMap(0x20);
@@ -86,7 +78,7 @@ ColourMap *rootColourMap = new ColourMap(0x20);
 Xwindow*   Xwindow::last = rootWin;
 int        Xwindow::nextJavaWin = 1;
 tcpSocket* Xwindow::javasock = NULL;	// Socket to listen for Jave Clients
-//tcpSocket* Xwindow::X11sock  = NULL;	// Socket to Listen for X Clients
+tcpSocket* Xwindow::X11sock  = NULL;	// Socket to Listen for X Clients
 Display*   Xwindow::display;
 //--------------------------------------//
 // Globals for X calls & related
@@ -110,7 +102,7 @@ int i;
 	
 for(i=0; i < len; i++)
    {
-   ::printf("%02x",*ptr++);
+   ::printf("%1x",*(ptr++));
    }
 ::printf("\n");
 }
@@ -120,7 +112,7 @@ void printHex(int value)
 ::printf("0x%08x\n",value);
 }
 
-void sendReplyHdr(tcpSocket *sockPtr,int words )
+void sendReplyHdr(int words )
 {
 struct
   {
@@ -134,83 +126,60 @@ reply.type = 1;
 reply.data = 0;
 reply.sequenceNumber = sequenceNum;
 reply.length = words - 8;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-void connectionSetup(tcpSocket *sockPtr)
+void connectionSetup()
 {
-
-//#define Col8bit TRUE
-
 xConnClientPrefix clientPrefix;
 char protocol[256];
 char auth[256];
-
-struct __attribute__((__packed__))
+struct
   {
   xConnSetupPrefix hdr;
   xConnSetup       setup;
   char             vendor[32];
   xPixmapFormat    format1;
-#ifdef Col8bit
-  xPixmapFormat    format8;
-#endif
+//  xPixmapFormat    format8;
   xPixmapFormat    format24;
   xWindowRoot      window;
   xDepth           depth1;
-#ifdef Col8bit
-  xDepth           depth8;
-  xVisualType      visual8;
-#endif
+//  xDepth           depth8;
+//  xVisualType      visual8;
   xDepth	depth24;
   xVisualType	visual24;
   } reply;
 
 std::cerr << "Connection Setup Read"<< std::endl;
-//Xwindow::X11sock -> read((char *) &clientPrefix,sizeof(xConnClientPrefix));
-sockPtr -> read((char *) &clientPrefix,sizeof(xConnClientPrefix));
+Xwindow::X11sock -> read((char *) &clientPrefix,sizeof(xConnClientPrefix));
 byteOrder = clientPrefix.byteOrder;
-std::cerr << "Byte Order of Client : " << byteOrder << std::endl;
 std::cerr << "Major Version : " << clientPrefix.majorVersion << std::endl;
 std::cerr << "Minor Version : " << clientPrefix.minorVersion << std::endl;
 std::cerr << "Auth Protocol string len : " << clientPrefix.nbytesAuthProto << std::endl;
-if (clientPrefix.nbytesAuthProto > 0 )
-   {
-   std::memset(&protocol,0,256);
-   //Xwindow::X11sock -> read((char *) &protocol,clientPrefix.nbytesAuthProto+1);
-   sockPtr -> read((char *) &protocol,clientPrefix.nbytesAuthProto+1);
-   std::cerr << "Auth Protocol : " << protocol << std::endl;
-   }
 std::cerr << "Auth String Len : " << clientPrefix.nbytesAuthString << std::endl;
-if (clientPrefix.nbytesAuthString > 0 )
-   {
-   std::memset(&auth,0,256);
-   //Xwindow::X11sock -> read((char *) &auth,clientPrefix.nbytesAuthString+1);
-   sockPtr -> read((char *) &auth,clientPrefix.nbytesAuthString+1);
-   std::cerr << "Auth String : " << auth << std::endl;
-   }
-// Think I need to set byteorder on X11 socket
+std::cerr << "Read Strings"<< std::endl;
+std::memset(&protocol,0,256);
+Xwindow::X11sock -> read((char *) &protocol,clientPrefix.nbytesAuthProto+1);
+std::cerr << "Auth Protocol : " << protocol << std::endl;
+std::memset(&auth,0,256);
+Xwindow::X11sock -> read((char *) &auth,clientPrefix.nbytesAuthString+1);
+std::cerr << "Auth Protocol : " << auth << std::endl;
+dumpHex(auth,16);
 
+// Think I need to set byteorder on X11 socket
 std::memset(&reply,0,sizeof(reply));
-reply.hdr.success = TRUE;
+reply.hdr.success = 1;
 reply.hdr.majorVersion = 11;
 reply.hdr.minorVersion = 0;
-
-//reply.hdr.length = 40;
-reply.hdr.length = (sizeof(reply) - 8) >> 2;
-std::cerr << " Header Length : " << reply.hdr.length  << std::endl;
+//reply.hdr.length = (sizeof(reply) - 32) >> 2;
+reply.hdr.length = 40;
 reply.setup.release = 11;
 reply.setup.ridBase = 0x05000000;
 reply.setup.ridMask = 0x003FFFFF;
 reply.setup.nbytesVendor = 0x1E;
 reply.setup.maxRequestSize = MAXREQUESTSIZE;	// maxRequestSize in bytes is this value * 4
 reply.setup.numRoots = 1;
-#ifdef Col8bit
-reply.setup.numFormats = 3;
-#else
 reply.setup.numFormats = 2;
-#endif
 reply.setup.imageByteOrder = MSBFirst;
 reply.setup.bitmapBitOrder = MSBFirst;
 reply.setup.bitmapScanlineUnit = 32;
@@ -222,13 +191,9 @@ strcpy(reply.vendor,"JavaXServ");
 reply.format1.depth = 1;
 reply.format1.bitsPerPixel = 1;
 reply.format1.scanLinePad = 8;          // Trace is in hex
-
-#ifdef Col8bit
-   reply.format8.depth = 8;
-   reply.format8.bitsPerPixel = 8;
-   reply.format8.scanLinePad  = 8;
-#endif
-
+//reply.format8.depth = 8;
+//reply.format8.bitsPerPixel = 8;
+//reply.format8.scanLinePad  = 8;
 reply.format24.depth = 24;
 reply.format24.bitsPerPixel = 32;
 reply.format24.scanLinePad  = 32;
@@ -245,26 +210,18 @@ reply.window.minInstalledMaps = 1;
 reply.window.maxInstalledMaps = 1;
 reply.window.rootVisualID = 0x21;
 reply.window.rootDepth = 24;
-#ifdef Col8bit
-reply.window.nDepths = 3;
-#else
 reply.window.nDepths = 2;
-#endif
 reply.depth1.depth = 1;
 reply.depth1.nVisuals = 0;
-
-#ifdef Col8bit
-   reply.depth8.depth = 8;
-   reply.depth8.nVisuals = 1;
-   reply.visual8.visualID = 0x21;
-   reply.visual8.c_class = PseudoColor;  // Need to support 8 bit Pseudocolour for Old Applications
-   reply.visual8.bitsPerRGB = 8;
-   reply.visual8.colormapEntries = 512;
-   reply.visual8.redMask = 0xFF0000;
-   reply.visual8.greenMask = 0xFF00;
-   reply.visual8.blueMask = 0xFF;
-#endif
-
+//reply.depth8.depth = 8;
+//eply.depth8.nVisuals = 1;
+//reply.visual8.visualID = 0x21;
+//reply.visual8.c_class = PseudoColor;  // Need to support 8 bit Pseudocolour for Old Applications
+//reply.visual8.bitsPerRGB = 8;
+//reply.visual8.colormapEntries = 512;
+//reply.visual8.redMask = 0xFF0000;
+//reply.visual8.greenMask = 0xFF00;
+//reply.visual8.blueMask = 0xFF;
 reply.depth24.depth = 24;
 reply.depth24.nVisuals = 1;
 reply.visual24.visualID = 0x21;
@@ -276,12 +233,11 @@ reply.visual24.greenMask = 0xFF00;
 reply.visual24.blueMask = 0xFF;
 
 // Need to add support for 24bit true colour for new applications
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 std::cerr << "Reply Authorized" << std::endl;
 }
 
-void internAtom(tcpSocket *sockPtr,xInternAtomReq *ptr)
+void internAtom(xInternAtomReq *ptr)
 {
 xInternAtomReply reply;
 char *namePtr= ((char *) ptr) + sizeof(xInternAtomReq);
@@ -296,11 +252,10 @@ reply.sequenceNumber = sequenceNum;
 std::cerr << "Reply sequence Number : " << sequenceNum << std::endl;
 reply.atom = XInternAtom(Xwindow::display,name, ptr -> onlyIfExists);
 std::cerr << "InternAtom : " << name << " Value : " << reply.atom << std::endl;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-void getAtomName(tcpSocket *sockPtr,xResourceReq *ptr)
+void getAtomName(xResourceReq *ptr)
 {
 xGetAtomNameReply reply;
 char *namePtr;
@@ -313,13 +268,11 @@ reply.sequenceNumber = sequenceNum;
 namePtr = XGetAtomName(Xwindow::display,ptr -> id);
 len     = strlen(namePtr);
 reply.length = (len + 3) >> 2;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
-//Xwindow::X11sock -> write(namePtr,(reply.length << 2));
-sockPtr -> write(namePtr,(reply.length << 2));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write(namePtr,(reply.length << 2));
 }
 
-void replyNoProperty(tcpSocket *sockPtr)
+void replyNoProperty(void)
 {
 xGetPropertyReply reply;
 
@@ -331,8 +284,7 @@ reply.length = 0;
 reply.propertyType = 0;
 reply.bytesAfter = 0;
 reply.nItems = 0;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
 //
@@ -340,7 +292,7 @@ sockPtr -> write((char *) &reply,sizeof(reply));
 // Making XGetWindowPropert on javaServ DISPLAY will
 // get found out with some applications
 //
-void getProperty(tcpSocket *sockPtr,xGetPropertyReq *ptr)
+void getProperty(xGetPropertyReq *ptr)
 {
 Atom actual;
 unsigned long items,bytes;
@@ -349,9 +301,7 @@ int format,ret,len;
 
 xGetPropertyReply reply;
 
-std::cerr << "GetProperty - Window : " << ptr -> window << " Property : " << ptr -> property << " type " << ptr -> type << std::endl;
-std::cerr << "Long offset : " << ptr -> longOffset << " Long Length : " << ptr -> longLength << std::endl;
-std::cerr << "property : " << XGetAtomName(Xwindow::display,ptr -> property) << std::endl;
+std::cerr << "GetProperty " << ptr -> property << " type " << ptr -> type << std::endl;
 if ( ptr -> window == rootWin -> X11windowId())
    {
    std::cerr << "Root window XGetWindowProperty : " << std::endl;
@@ -372,7 +322,6 @@ if ( ptr -> window == rootWin -> X11windowId())
       std::cerr << "Only Partial Read of Property need to code for" << std::endl;
 
   std::cerr << "actual : " << actual << " format : " << format << " items : " << items << std::endl;
-  std::cerr << "bytes : " << bytes << " prop :  " << prop << std::endl;
   }
 else
   {
@@ -418,14 +367,11 @@ reply.propertyType = actual;
 reply.bytesAfter = bytes;
 reply.nItems = items;
 // dumpHex((char *) &reply,32);
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 if ( actual != 0 )
    {  
-   //Xwindow::X11sock -> write((char *) prop,len);
-   sockPtr -> write((char *) prop,len);
-   //Xwindow::X11sock -> write("    ",(reply.length << 2) - len);
-   sockPtr -> write("    ",(reply.length << 2) - len);
+   Xwindow::X11sock -> write((char *) prop,len);
+   Xwindow::X11sock -> write("    ",(reply.length << 2) - len);
    }
 // Call XFree to free results ?
 }
@@ -451,7 +397,7 @@ std::cerr << "Point size : " << ps << std::endl;
 return(ps);
 }
 
-void queryFont(tcpSocket *sockPtr,xResourceReq *ptr)
+void queryFont(xResourceReq *ptr)
 {
 XFontStruct *fontStr;
 xQueryFontReply reply;
@@ -497,21 +443,16 @@ std::cerr << "Number of properties : " << reply.nFontProps << std::endl;
 std::cerr << "Size of reply : " << sizeof(reply) / 4 << std::endl;
 reply.length = (sizeof(reply)/4) - 8 + (2 * reply.nFontProps) + ( 3 * reply.nCharInfos); // Length is additional length so minus 8 byte header
 std::cerr << "Reply Length : "<< reply.length << std::endl;
-//Xwindow::X11sock -> assert();
-sockPtr -> assert();
-//Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
-sockPtr -> put((char *) &reply,sizeof(reply));
-//Xwindow::X11sock -> put((char *) fontStr -> properties,8 * reply.nFontProps);
-sockPtr -> put((char *) fontStr -> properties,8 * reply.nFontProps);
-//Xwindow::X11sock -> put((char *) fontStr -> per_char,12 * reply.nCharInfos);
-sockPtr -> put((char *) fontStr -> per_char,12 * reply.nCharInfos);
-//Xwindow::X11sock -> flush();
-sockPtr -> flush();
+Xwindow::X11sock -> assert();
+Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> put((char *) fontStr -> properties,8 * reply.nFontProps);
+Xwindow::X11sock -> put((char *) fontStr -> per_char,12 * reply.nCharInfos);
+Xwindow::X11sock -> flush();
 // ::XFreeFontInfo(Xwindow::display,fontStr,1);
 }
 
 
-void listFonts(tcpSocket *sockPtr,xListFontsReq *ptr)
+void listFonts(xListFontsReq *ptr)
 {
 // Must be multiple of 4 bytes
 
@@ -546,21 +487,17 @@ for ( i=0; i < num; i++)
     }
 reply.length = (sl + 3) >> 2;
 std::cerr << "Fonts : " << num << " Total String Length " << sl << std::endl;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 wrkptr = listPtr;
 for ( i=0; i < num; i++)
     {
     std::cerr << " Font : " << (*wrkptr) << " strlen : " << strlen(*wrkptr);
     cl = (char) strlen(*wrkptr);
-    // Xwindow::X11sock -> write(&cl,1);
-    sockPtr -> write(&cl,1);
-    // Xwindow::X11sock -> write(*wrkptr,strlen(*wrkptr));
-    sockPtr -> write(*wrkptr,strlen(*wrkptr));
+    Xwindow::X11sock -> write(&cl,1);
+    Xwindow::X11sock -> write(*wrkptr,strlen(*wrkptr));
     wrkptr++;
     }
-//Xwindow::X11sock -> write("    ",(reply.length << 2) - sl);
-sockPtr -> write("    ",(reply.length << 2) - sl);
+Xwindow::X11sock -> write("    ",(reply.length << 2) - sl);
 ::XFreeFontNames(listPtr);
 }
 
@@ -590,7 +527,7 @@ else
    }
 }
 
-void  listFontsWithInfo(tcpSocket *sockPtr,xListFontsReq *ptr)
+void  listFontsWithInfo(xListFontsReq *ptr)
 {
 xListFontsWithInfoReply reply;
 XFontStruct *fontPtr;
@@ -631,26 +568,20 @@ for ( i=0; i < num; i++)
     reply.length = (sizeof(reply) / 4) - 8 + (2 * reply.nFontProps) + ((sl + 3) >> 2); // Additional length i.e minus 8 byte header
     std::cerr << "Font string length " << sl;
     std::cerr << " rounded " << ((sl + 3) >> 2) << std::endl;
-    //Xwindow::X11sock -> assert();
-    sockPtr -> assert();
-    //Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
-    sockPtr -> put((char *) &reply,sizeof(reply));
-    //Xwindow::X11sock -> put((char *) wrkptr -> properties,(pl = (8 * reply.nFontProps)));
-    sockPtr -> put((char *) wrkptr -> properties,(pl = (8 * reply.nFontProps)));
+    Xwindow::X11sock -> assert();
+    Xwindow::X11sock -> put((char *) &reply,sizeof(reply));
+    Xwindow::X11sock -> put((char *) wrkptr -> properties,(pl = (8 * reply.nFontProps)));
 //    Xwindow::X11sock -> put(*namePtr++,sl);
-    //Xwindow::X11sock -> put(*namePtr,sl);
-    sockPtr -> put(*namePtr,sl);
-    //Xwindow::X11sock -> put("    ",( 4 - (sl % 4 )) % 4);
-    sockPtr -> put("    ",( 4 - (sl % 4 )) % 4);
-    //Xwindow::X11sock -> flush();
-    sockPtr -> flush();
+    Xwindow::X11sock -> put(*namePtr,sl);
+    Xwindow::X11sock -> put("    ",( 4 - (sl % 4 )) % 4);
+    Xwindow::X11sock -> flush();
     wrkptr++;
     }
 // Last in series
 reply.nameLength = 0;
 reply.length = 7;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+
 // Comment out for now
 //::XFreeFontInfo(namePtr,fontPtr,num);
 }
@@ -667,7 +598,7 @@ if ((jid = ptr -> JavaWid(wid)) == -1 )
 return(jid);
 }
 
-void getFontPath(tcpSocket *sockPtr,xResourceReq *ptr)
+void getFontPath(xResourceReq *ptr)
 {
 xGetFontPathReply reply;
 char **pathPtr,**wrkPtr;
@@ -685,27 +616,21 @@ for ( i = 0; i < num; i++)
     nl += ( 1 + strlen(*wrkPtr++));
     }
 reply.length = (nl + 3)/4;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
-//Xwindow::X11sock -> assert();
-sockPtr -> assert();
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> assert();
 wrkPtr = pathPtr;
 for ( i = 0; i < num; i++)
     {
-    //Xwindow::X11sock -> putByte(l = strlen(*wrkPtr));
-    sockPtr -> putByte(l = strlen(*wrkPtr));
-    //Xwindow::X11sock -> put(*wrkPtr++,l);
-    sockPtr -> put(*wrkPtr++,l);
+    Xwindow::X11sock -> putByte(l = strlen(*wrkPtr));
+    Xwindow::X11sock -> put(*wrkPtr++,l);
     }
 i = 0;
-//Xwindow::X11sock -> put((char *) &i,(reply.length << 2) - nl);
-sockPtr -> put((char *) &i,(reply.length << 2) - nl);
-//Xwindow::X11sock -> flush();
-sockPtr -> flush();
+Xwindow::X11sock -> put((char *) &i,(reply.length << 2) - nl);
+Xwindow::X11sock -> flush();
 XFreeFontPath(pathPtr);
 }
 
-void changeProperty(tcpSocket *sockPtr,xChangePropertyReq *ptr)
+void changeProperty(xChangePropertyReq *ptr)
 {
 char *namePtr;
 // Should check if application wants event
@@ -725,13 +650,12 @@ event.u.property.window = ptr -> window;
 event.u.property.atom = ptr -> property;
 event.u.property.time = clock();
 event.u.property.state = 0;             // Change Value
-//Xwindow::X11sock -> write((char *) &event,sizeof(event));
-sockPtr -> write((char *) &event,sizeof(event));
+Xwindow::X11sock -> write((char *) &event,sizeof(event));
 std::cerr << "Send Change Property Event" << std::endl;
 #endif
 }
 
-void convertSelection(tcpSocket *sockPtr,xConvertSelectionReq *ptr)
+void convertSelection(xConvertSelectionReq *ptr)
 {
 xEvent event;
 
@@ -744,12 +668,11 @@ event.u.selectionNotify.requestor = ptr -> requestor;
 event.u.selectionNotify.selection = ptr -> selection;
 event.u.selectionNotify.target = ptr -> target;
 event.u.selectionNotify.property = ptr -> property;
-//Xwindow::X11sock -> write((char *) &event,sizeof(event));
-sockPtr -> write((char *) &event,sizeof(event));
+Xwindow::X11sock -> write((char *) &event,sizeof(event));
 std::cerr << "Send Change Property Event" << std::endl;
 }
 
-void mapWindow(tcpSocket *sockPtr,xResourceReq *ptr)
+void mapWindow(xResourceReq *ptr)
 {
 int pstate,count;
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
@@ -761,16 +684,16 @@ if ( winptr != NULL )
    pstate = winptr -> ParentMapState();
    Xwindow::javasock -> putExposeMapHeader();
    std::cerr << "Now Map the Window parent state :" << pstate << std::endl;
-   winptr -> MapWindow(sockPtr,pstate,sequenceNum);
+   winptr -> MapWindow(pstate,sequenceNum);
    if ( pstate == 2 )
       {
-      winptr -> exposePendingSubWindows(sockPtr,sequenceNum);
+      winptr -> exposePendingSubWindows(sequenceNum);
       }
    Xwindow::javasock -> flushExposeMapHeader();
    } 
 }
 
-void unMapWindow(tcpSocket *sockPtr,xResourceReq *ptr)
+void unMapWindow(xResourceReq *ptr)
 {
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 // UnMapWindow and return JavaId
@@ -779,7 +702,7 @@ Xwindow::javasock -> write((char *) ptr,sizeof(xResourceReq));
 std::cerr << "Send UnMapWindow Request" << std::endl;
 }
 
-void mapSubwindows(tcpSocket *sockPtr,xResourceReq *ptr)
+void mapSubwindows(xResourceReq *ptr)
 {
 int count;
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
@@ -788,7 +711,7 @@ std::cerr << "Map SubWindows" << std::endl;
 if ( winptr != NULL )
    {
    Xwindow::javasock -> putExposeMapHeader();
-   winptr -> MapSubWindows(sockPtr,sequenceNum);
+   winptr -> MapSubWindows(sequenceNum);
    Xwindow::javasock -> flushExposeMapHeader();
    }
 }
@@ -850,7 +773,7 @@ ptr -> drawable = jw;
 Xwindow::javasock -> write((char *) ptr,(ptr -> length) << 2);
 }
 
-void queryExtension(tcpSocket *sockPtr,xQueryExtensionReq *ptr)
+void queryExtension(xQueryExtensionReq *ptr)
 {
 xQueryExtensionReply reply;
 char extension[120];
@@ -868,30 +791,21 @@ reply.type = 1;
 // None  present = 0;
 reply.present = 0;
 reply.sequenceNumber = sequenceNum;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-void getSelectionOwner(tcpSocket *sockPtr,xResourceReq *ptr)
+void getSelectionOwner(xResourceReq *ptr)
 {
 xGetSelectionOwnerReply reply;
 
-std::cerr << "Get Selection Owner - Atom : " << ptr->id << std::endl;
+std::cerr << "Get Selection Owener Reply " << std::endl;
 std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
-// Set saved selection owner
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-void setSelectionOwner(xResourceReq *ptr)
-{
-std::cerr << "Set Selection Owner - Window : " << ptr->id << std::endl;
-// set saved selection owner
-}
-
-void queryColors(tcpSocket *sockPtr,xQueryColorsReq *ptr)
+void queryColors(xQueryColorsReq *ptr)
 {
 xQueryColorsReply reply;
 xrgb rgb;
@@ -903,21 +817,19 @@ reply.sequenceNumber = sequenceNum;
 reply.length = 4;
 // For now just do as Xcalc trace
 reply.nColors = 2;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+
 rgb.red   = 0;
 rgb.blue  = 0;
 rgb.green = 0;
-//Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
-sockPtr -> write((char *) &rgb,sizeof(rgb));
+Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
 rgb.red   = 0xFF00;
 rgb.blue  = 0xFF00;
 rgb.green = 0xFF00;
-//Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
-sockPtr -> write((char *) &rgb,sizeof(rgb));
+Xwindow::X11sock -> write((char *) &rgb,sizeof(rgb));
 }
 
-void allocColor(tcpSocket *sockPtr,xAllocColorReq *ptr)
+void allocColor(xAllocColorReq *ptr)
 {
 //  Status status;
 //    XColor xcolour;
@@ -963,12 +875,11 @@ void allocColor(tcpSocket *sockPtr,xAllocColorReq *ptr)
     reply.pixel  = pixel;
     std::cerr << "Pixel : "; 
     printHex(pixel);
-    //Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-    sockPtr -> write((char *) &reply,sizeof(reply));
+    Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
     
     // Add code to send to java if not a direct colour and downloaded     
 }
-void allocNamedColor(tcpSocket *sockPtr,xAllocNamedColorReq *ptr)
+void allocNamedColor(xAllocNamedColorReq *ptr)
 {
     Status status;
     XColor screenColour;
@@ -997,13 +908,13 @@ void allocNamedColor(tcpSocket *sockPtr,xAllocNamedColorReq *ptr)
     reply.screenRed   = screenColour.red;
     reply.screenGreen = screenColour.green;
     reply.screenBlue  = screenColour.blue;
-    //Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-    sockPtr -> write((char *) &reply,sizeof(reply));
+    Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
+    
     // Add code to send to java if not a direct colour     
 }
 
 
-void lookupColor(tcpSocket *sockPtr,xLookupColorReq *ptr)
+void lookupColor(xLookupColorReq *ptr)
 {
     Status status;
     xLookupColorReply reply;
@@ -1028,8 +939,7 @@ void lookupColor(tcpSocket *sockPtr,xLookupColorReq *ptr)
     reply.screenRed   = screenColour.red;
     reply.screenGreen = screenColour.green;
     reply.screenBlue  = screenColour.blue;
-    //Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-    sockPtr -> write((char *) &reply,sizeof(reply));
+    Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
     // Add code to send to java if not a direct colour  
 }
 
@@ -1210,8 +1120,7 @@ void createWindow(xCreateWindowReq *ptr)
 Xwindow *winptr, *parentPtr;
 int     mask;
 std::cerr << "Create X11 window : " << ptr -> wid << " parent : " << ptr -> parent << std::endl;
-std::cerr << "width : " << ptr -> width << " height : " << ptr -> height << " depth : " << ptr -> depth << std::endl;
-// ::printf("WID(hex) : %x Parent %x \n",ptr -> wid,ptr -> parent);std::cerr << "Create X11 window : " << ptr -> wid << " parent : " << ptr -> parent << std::endl;
+// ::printf("WID(hex) : %x Parent %x \n",ptr -> wid,ptr -> parent);
 
 mask = ptr-> mask;
 if ((parentPtr = rootWin -> AddressWin(ptr -> parent)) != 0 )
@@ -1290,16 +1199,16 @@ processWindowMask(winPtr,mask,(int *) ptr + (sizeof(xChangeWindowAttributesReq) 
 //   }
 }
 
-void getWindowAttributes(tcpSocket *sockPtr,xResourceReq *ptr)
+void getWindowAttributes(xResourceReq *ptr)
 {
 Xwindow *winPtr;
 
 std::cerr << "Get Window Attributes" << std::endl;
 winPtr = rootWin -> AddressWin(ptr -> id);
-winPtr -> GetWindowAttributes(sockPtr,sequenceNum);
+winPtr -> GetWindowAttributes(sequenceNum);
 }
 
-void destroyWindow(tcpSocket *sockPtr,xResourceReq *ptr)
+void destroyWindow(xResourceReq *ptr)
 {
 xEvent event;
 
@@ -1309,8 +1218,7 @@ event.u.u.type = 28;
 event.u.u.sequenceNumber = sequenceNum;
 event.u.destroyNotify.event = ptr -> id;
 event.u.destroyNotify.window = ptr -> id;
-//Xwindow::X11sock -> write((char *) &event,sizeof(event));
-sockPtr -> write((char *) &event,sizeof(event));
+Xwindow::X11sock -> write((char *) &event,sizeof(event));
 std::cerr << "Send Destroy Notify Event" << std::endl;
 
 // Convert window Id from X11 to java Id & forward request.
@@ -1318,26 +1226,26 @@ if (( ptr -> id = rootWin -> JavaWid(ptr -> id)) != -1 )
    Xwindow::javasock -> write((char *) ptr,(ptr -> length)  << 2);
 }
 
-void getGeometry(tcpSocket *sockPtr,xResourceReq *ptr)
+void getGeometry(xResourceReq *ptr)
 {
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 
 std::cerr << "Get Geometry" << std::endl;
 if ( winptr != NULL )
-   winptr -> GetGeometry(sockPtr,rootWin -> X11windowId(0),sequenceNum);
+   winptr -> GetGeometry(rootWin -> X11windowId(0),sequenceNum);
 }
 
-void queryTree(tcpSocket *sockPtr,xResourceReq *ptr)
+void queryTree(xResourceReq *ptr)
 {
 Xwindow *winptr = rootWin -> AddressWin(ptr -> id);
 
 std::cerr << "Query Tree" << std::endl;
 if ( winptr != NULL )
-   winptr -> QueryTree(sockPtr,rootWin -> X11windowId(0),sequenceNum);
+   winptr -> QueryTree(rootWin -> X11windowId(0),sequenceNum);
 }
 
 
-void clearArea(tcpSocket *sockPtr,xClearAreaReq *ptr)
+void clearArea(xClearAreaReq *ptr)
 {
 Xwindow *winPtr = rootWin -> AddressWin(ptr -> window);
 
@@ -1345,7 +1253,7 @@ std::cerr << "Clear Area Routine : " << (int) (ptr -> exposures) << " :" << std:
 if ( ptr -> exposures == (int) 1 )
    {
    std::cerr << "Clear Area Expose" << std::endl;
-   winPtr -> exposeMust(sockPtr,sequenceNum,ptr -> x,ptr -> y,
+   winPtr -> exposeMust(sequenceNum,ptr -> x,ptr -> y,
                                     ptr -> width, ptr -> height);
    }
 // Convert window Id from X11 to java Id & forward request.
@@ -1359,7 +1267,7 @@ else
    }
 }
 
-void getKeyboardMapping(tcpSocket *sockPtr,xGetKeyboardMappingReq *ptr)
+void getKeyboardMapping(xGetKeyboardMappingReq *ptr)
 {
 // May not have to do all this, just match java to mapping
 // Starts at 9, for 100, 3 per key
@@ -1375,10 +1283,8 @@ if ( ptr -> count <= 133 )
    reply.keySymsPerKeyCode = 3;
    reply.sequenceNumber = sequenceNum;
    reply.length = 3 * (ptr -> count);
-   //Xwindow::X11sock -> write((char *) &reply,32);
-   sockPtr -> write((char *) &reply,32);
-   //Xwindow::X11sock -> write((char *) &keymap[(ptr -> firstKeyCode) - FIRSTKEY],
-   sockPtr -> write((char *) &keymap[(ptr -> firstKeyCode) - FIRSTKEY],
+   Xwindow::X11sock -> write((char *) &reply,32);
+   Xwindow::X11sock -> write((char *) &keymap[(ptr -> firstKeyCode) - FIRSTKEY],
                     12 * (ptr -> count));
    }
 else
@@ -1387,7 +1293,7 @@ else
    }
 }
 
-void getKeyboardControl(tcpSocket *sockPtr,xResourceReq *ptr)
+void getKeyboardControl(xResourceReq *ptr)
 {
 xGetKeyboardControlReply reply;
 
@@ -1402,11 +1308,10 @@ reply.keyClickPercent = 0;
 reply.bellPercent = 0x32;
 reply.bellPitch = 0x190;
 reply.bellDuration = 0x64;
-//Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
-sockPtr -> write((char *) &reply,sizeof(reply));
+Xwindow::X11sock -> write((char *) &reply,sizeof(reply));
 }
 
-void getModifierMapping(tcpSocket *sockPtr,xResourceReq *ptr)
+void getModifierMapping(xResourceReq *ptr)
 {
 xGetModifierMappingReply reply;
 
@@ -1419,13 +1324,11 @@ reply.type = 1;
 reply.numKeyPerModifier = 2;
 reply.sequenceNumber = sequenceNum;
 reply.length = 4;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
-//Xwindow::X11sock -> write((char *) &mods,16);
-sockPtr -> write((char *) &mods,16);
+Xwindow::X11sock -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &mods,16);
 }
 
-void grabKeyboard(tcpSocket *sockPtr,xGrabKeyboardReq *ptr)
+void grabKeyboard(xGrabKeyboardReq *ptr)
 {
 xGrabKeyboardReply reply;
 
@@ -1435,11 +1338,10 @@ reply.type = 1;
 reply.status = 0;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &reply,32);
 }
 
-void getInputFocus(tcpSocket *sockPtr)
+void getInputFocus()
 {
 xGetInputFocusReply reply;
 
@@ -1448,11 +1350,10 @@ std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &reply,32);
 }
 
-void getScreenSaver(tcpSocket *sockPtr,xResourceReq *ptr)
+void getScreenSaver(xResourceReq *ptr)
 {
 xGetScreenSaverReply reply;
 
@@ -1461,11 +1362,10 @@ std::memset(&reply,0,sizeof(reply));
 reply.type = 1;
 reply.sequenceNumber = sequenceNum;
 reply.length = 0;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &reply,32);
 }
 
-void getPointerControl(tcpSocket *sockPtr,xResourceReq *ptr)
+void getPointerControl(xResourceReq *ptr)
 {
 xGetPointerControlReply reply;
 
@@ -1477,11 +1377,10 @@ reply.length = 0;
 reply.accelNumerator = 0x02;
 reply.accelDenominator = 0x01;
 reply.threshold = 0x04;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &reply,32);
 }
 
-void queryBestSize(tcpSocket *sockPtr,xQueryBestSizeReq *ptr)
+void queryBestSize(xQueryBestSizeReq *ptr)
 {
 xQueryBestSizeReply reply;
 
@@ -1492,8 +1391,7 @@ reply.sequenceNumber = sequenceNum;
 reply.length = 0;
 reply.width = ptr -> width;
 reply.height = ptr -> height;
-//Xwindow::X11sock -> write((char *) &reply,32);
-sockPtr -> write((char *) &reply,32);
+Xwindow::X11sock -> write((char *) &reply,32);
 }
 
 void reportRequest(int type)
@@ -1583,11 +1481,7 @@ void reportRequest(int type)
       case X_FreePixmap :
       	   std::cerr << "X_FreePixmap" << std::endl;
       	   break;
-
-      case X_SetSelectionOwner :
-           std::cerr << "X_SetSelectionOwner" << std::endl;
-           break;
-
+      	       
       case X_GetSelectionOwner :
            std::cerr << "X_GetSelectionOwner" << std::endl;
            break;
@@ -1743,7 +1637,7 @@ void reportRequest(int type)
 	
 }
 
-int processRequests(tcpSocket *sockPtr)
+int processRequests(void)
 {
 int len,hl,ret;
 struct
@@ -1752,16 +1646,16 @@ struct
   int data[MAXREQUESTSIZE];		// Maximum Request size set in connection setup
   } requestBuff;
 
-std::cerr << "Process X11 Request : " << sockPtr -> sockfd << std::endl;
+std::cerr << "Process X11 Request" << std::endl;
 len = 4;
 while ( len > 0 )       // Need to change to while bytes available
    {
    // Read in Header
-   if (( hl = sockPtr -> readBlock((char *) &requestBuff.req,4)) != 4)
+   if (( hl = Xwindow::X11sock -> readBlock((char *) &requestBuff.req,4)) != 4)
       {
       if ( hl == 0 )
          {
-         std::cerr << "End of X11 Stream - Header" << std::endl;
+         std::cerr << "End of X11 Stream" << std::endl;
          return(0);
          }
       else
@@ -1771,6 +1665,7 @@ while ( len > 0 )       // Need to change to while bytes available
          }
       }
    // Get remaining length in bytes
+   dumpHex((char *) &requestBuff.req,4);
    len = ( requestBuff.req.length - 1) << 2;
    std::cerr << "Request length : " << requestBuff.req.length << " bytes : " << (requestBuff.req.length << 2) << std::endl;
    if ( requestBuff.req.length > MAXREQUESTSIZE )
@@ -1778,12 +1673,12 @@ while ( len > 0 )       // Need to change to while bytes available
       std::cerr << "X11 Request data > MaxRequestSize : " << requestBuff.req.length << std::endl;
       return(-2);
       }
-   if (( ret = sockPtr -> readBlock((char *) &requestBuff.req.id,len)) != len )
+   if (( ret = Xwindow::X11sock -> readBlock((char *) &requestBuff.req.id,len)) != len )
       {
       if ( ret == 0 )
 	 {
-         std::cerr << "End of X11 Stream - Data" << std::endl;
-         return(-3);
+         std::cerr << "End of X11 Stream" << std::endl;
+         return(0);
 	 }
       else
 	 {
@@ -1801,19 +1696,19 @@ while ( len > 0 )       // Need to change to while bytes available
       //  Deal with locally                             //
       //************************************************//
       case X_ConvertSelection :
-           convertSelection(sockPtr,(xConvertSelectionReq *) &requestBuff);
+           convertSelection((xConvertSelectionReq *) &requestBuff);
            break;
 
       case X_InternAtom :
-           internAtom(sockPtr,(xInternAtomReq *) &requestBuff);
+           internAtom((xInternAtomReq *) &requestBuff);
            break;
 
       case X_GetAtomName :
-           getAtomName(sockPtr,(xResourceReq *) &requestBuff);
+           getAtomName((xResourceReq *) &requestBuff);
            break;
 
       case X_QueryFont :
-           queryFont(sockPtr,(xResourceReq *) &requestBuff);
+           queryFont((xResourceReq *) &requestBuff);
            break;
 
       case X_OpenFont :
@@ -1821,19 +1716,19 @@ while ( len > 0 )       // Need to change to while bytes available
            break;
 
       case X_ListFonts :
-           listFonts(sockPtr,(xListFontsReq *) &requestBuff);
+           listFonts((xListFontsReq *) &requestBuff);
            break;
 
       case X_GetFontPath :
-           getFontPath(sockPtr,(xResourceReq *) &requestBuff);
+           getFontPath((xResourceReq *) &requestBuff);
            break;
 
       case X_ListFontsWithInfo :
-           listFontsWithInfo(sockPtr,(xListFontsReq *) &requestBuff);
+           listFontsWithInfo((xListFontsReq *) &requestBuff);
            break;
 
       case X_ChangeProperty :
-           changeProperty(sockPtr,(xChangePropertyReq *) &requestBuff);
+           changeProperty((xChangePropertyReq *) &requestBuff);
            break;
 
       case X_ChangeWindowAttributes :
@@ -1841,35 +1736,35 @@ while ( len > 0 )       // Need to change to while bytes available
            break;
 
       case X_GetWindowAttributes :
-           getWindowAttributes(sockPtr,(xResourceReq *) &requestBuff);
+           getWindowAttributes((xResourceReq *) &requestBuff);
            break;
 
       case X_GetGeometry :
-           getGeometry(sockPtr,(xResourceReq *) &requestBuff);
+           getGeometry((xResourceReq *) &requestBuff);
            break;
 
       case X_QueryTree :
-           queryTree(sockPtr,(xResourceReq *) &requestBuff);
+           queryTree((xResourceReq *) &requestBuff);
            break;
 
       case X_GetProperty :
-           getProperty(sockPtr,(xGetPropertyReq *) &requestBuff);
+           getProperty((xGetPropertyReq *) &requestBuff);
            break;
 
       case X_QueryExtension :
-           queryExtension(sockPtr,(xQueryExtensionReq *) &requestBuff);
+           queryExtension((xQueryExtensionReq *) &requestBuff);
            break;
 
       case X_GetInputFocus :
-	   getInputFocus(sockPtr);
+	   getInputFocus();
 	   break;
 
       case X_AllocColor :			// Deal with colour locally pass to gc 24bit colour
-	   allocColor(sockPtr,(xAllocColorReq *) &requestBuff);
+	   allocColor((xAllocColorReq *) &requestBuff);
 	   break;
 	  	   
       case X_AllocNamedColor :			// Deal with colour locally pass to gc 24bit colour
-	   allocNamedColor(sockPtr,(xAllocNamedColorReq *) &requestBuff);
+	   allocNamedColor((xAllocNamedColorReq *) &requestBuff);
 	   break;
 	 	  
 //      case X_QueryColors :
@@ -1877,43 +1772,39 @@ while ( len > 0 )       // Need to change to while bytes available
 //           break;
 
       case X_LookupColor :			// Deal with colour locally pass to gc 24bit colour
-          lookupColor(sockPtr,(xLookupColorReq *) &requestBuff);
+          lookupColor((xLookupColorReq *) &requestBuff);
 	  break;	
 
       case X_GetSelectionOwner :
-           getSelectionOwner(sockPtr,(xResourceReq *) &requestBuff);
-           break;
-
-      case X_SetSelectionOwner :
-           setSelectionOwner((xResourceReq *) &requestBuff);
+           getSelectionOwner((xResourceReq *) &requestBuff);
            break;
 
       case X_GrabKeyboard :
-           grabKeyboard(sockPtr,(xGrabKeyboardReq *) &requestBuff);
+           grabKeyboard((xGrabKeyboardReq *) &requestBuff);
            break;
 
       case X_GetKeyboardControl :
-           getKeyboardControl(sockPtr,(xResourceReq *) &requestBuff);
+           getKeyboardControl((xResourceReq *) &requestBuff);
            break;
 
       case X_GetKeyboardMapping :
-           getKeyboardMapping(sockPtr,(xGetKeyboardMappingReq *) &requestBuff);
+           getKeyboardMapping((xGetKeyboardMappingReq *) &requestBuff);
            break;
 
       case X_GetModifierMapping :
-           getModifierMapping(sockPtr,(xResourceReq *) &requestBuff);
+           getModifierMapping((xResourceReq *) &requestBuff);
            break;
 
       case X_GetPointerControl :
-           getPointerControl(sockPtr,(xResourceReq *) &requestBuff);
+           getPointerControl((xResourceReq *) &requestBuff);
            break;
 
       case X_GetScreenSaver :
-           getScreenSaver(sockPtr,(xResourceReq *) &requestBuff);
+           getScreenSaver((xResourceReq *) &requestBuff);
            break;
 
       case X_QueryBestSize :
-           queryBestSize(sockPtr,(xQueryBestSizeReq *) &requestBuff);
+           queryBestSize((xQueryBestSizeReq *) &requestBuff);
            break;
 
       //************************************************//
@@ -1928,12 +1819,12 @@ while ( len > 0 )       // Need to change to while bytes available
            break;
 
       case X_DestroyWindow :
-           destroyWindow(sockPtr,(xResourceReq *) &requestBuff);
+           destroyWindow((xResourceReq *) &requestBuff);
            break;
 
       case X_ClearArea :
            std::cerr << "Clear Area" << std::endl;
-           clearArea(sockPtr,(xClearAreaReq *) &requestBuff);
+           clearArea((xClearAreaReq *) &requestBuff);
            break;
            
       case X_CreatePixmap :
@@ -1953,15 +1844,15 @@ while ( len > 0 )       // Need to change to while bytes available
 	   break;
 
       case X_MapWindow :
-           mapWindow(sockPtr,(xResourceReq *) &requestBuff);
+           mapWindow((xResourceReq *) &requestBuff);
            break;
 
       case X_MapSubwindows :
-           mapSubwindows(sockPtr,(xResourceReq *) &requestBuff);
+           mapSubwindows((xResourceReq *) &requestBuff);
            break;
 
       case X_UnmapWindow :
-           unMapWindow(sockPtr,(xResourceReq *) &requestBuff);
+           unMapWindow((xResourceReq *) &requestBuff);
            break;
 
       case X_PutImage :
@@ -2061,11 +1952,11 @@ void closeDownClient(void)
     std::cerr << "Close Java Socket" << std::endl;
     Xwindow::javasock -> close();
     // Close X11 socket
-    std::cerr << "Add Close X Socket" << std::endl;
-    //Xwindow::X11sock -> close();
+    std::cerr << "Close X Socket" << std::endl;
+    Xwindow::X11sock -> close();
     // End task
     std::cerr << "Kill Client" << std::endl;
-    kill(setupPid2,SIGKILL);
+    kill(setupPid,SIGKILL);
     std::cerr << "exit" << std::endl;
     exit(0);
 }
@@ -2077,7 +1968,7 @@ void closeDownClient(void)
 //     0  - End of File	        //
 //    -ve - Error		//
 //////////////////////////////////
-int processReplies(tcpSocket *sockPtr)
+int processReplies(void)
 {
 int ret,len;
 short x,y;
@@ -2170,8 +2061,7 @@ switch ( buff.u.reply.type )
         break;
    }
 std::cerr << "Send to X client : " << len << std::endl;
-//Xwindow::X11sock -> write((char *) &buff,len);
-sockPtr -> write((char *) &buff,len);
+Xwindow::X11sock -> write((char *) &buff,len);
 return(1);
 }
 
@@ -2231,71 +2121,28 @@ dumpHex((char*) requestBuff.data,len);
 std::cerr << "Command Read : " << command << std::endl;
 }
 
-
-
 int process(void)
 {
 SockSet *sockset = new SockSet();
 int     ret,v;
-int     i,s;
 
 sequenceNum  = 0;
 fontEntries  = 0;
-
-s = 0;
-
-sockset -> init();
-sockset -> addReadMask(X11Serv);
-sockset -> addReadMask(Xwindow::javasock);
 do
    {
-   std::cerr << "X11 Serv socket : " << X11Serv -> sockfd << std::endl;
+   sockset -> init();
+   sockset -> addReadMask(Xwindow::X11sock);
+   sockset -> addReadMask(Xwindow::javasock);
    std::cerr << "Select on inputs" << std::endl;
    v = sockset -> select(TIMEOUT);
-   //v = sockset -> wait();
-   if ( sockset -> isset(Xwindow::javasock))
-      {
-      if (( ret =  processReplies(X11sock[i])) <= 0 )
+   if ( sockset -> isset(Xwindow::X11sock))
+      if (( ret = processRequests()) <= 0 )
          return(ret);
-      }
-   if ( s > 0 )
-      {
-      for( i = 0; i < s; i++)
-         {
-         if ( sockset -> isset(X11sock[i]))
-            {
-	    ret = processRequests(X11sock[i]);
-	    if ( ret == 0 )   // Other end has closed connection
-	       {
-	       std::cerr << "Connection closed : " << s << " : " << i << " : " << X11sock[i] -> sockfd << std::endl;
-	       sockset -> removeReadMask(X11sock[i]);
-	       X11sock[i] -> close();
-               sockset -> addReadMask(X11Serv);
-               sockset -> addReadMask(Xwindow::javasock);
-               }
-            if ( ret < 0 ) return(ret);
-            }
-         }
-      }
-   if ( sockset -> isset(X11Serv))
-      {
-      if ( s < X11SESSIONS )
-         {
-         std::cerr << "Accept new X11 socket : " << s << std::endl;
-         X11sock[s] = new tcpSocket(X11Serv -> accept());
-         // Add to Read Mask
-         sockset -> addReadMask(X11sock[s]);
-         connectionSetup(X11sock[s]);
-         s++;
-         }
-      else
-         {
-         std::cerr << "Maximum number of X11 Sessions" << std::endl;
-         exit(-3);
-         }
-      }     
+   if ( sockset -> isset(Xwindow::javasock))
+      if (( ret =  processReplies()) <= 0 )
+         return(ret);
    } while ( v > 0 );
-std::cerr << "Timed Out : " << v << " : " << std::strerror(errno)<< std::endl;
+std::cerr << "Timed Out" << std::endl;
 return(-3);
 }
 
@@ -2307,12 +2154,11 @@ if ( Xwindow::javasock != NULL )
    std::cerr << "Closing java socket" << std::endl;
    Xwindow::javasock -> close();
    }
-std::cerr << "Add closing X11 sockersocket" << std::endl;
-//if ( Xwindow::X11sock != NULL  )
-//   {
-//   std::cerr << "Closing X11 socket" << std::endl;
-//   Xwindow::X11sock -> close();
-//   }
+if ( Xwindow::X11sock != NULL  )
+   {
+   std::cerr << "Closing X11 socket" << std::endl;
+   Xwindow::X11sock -> close();
+   }
 std::cerr << "Exiting Program" << std::endl;
 exit(3);
 }
@@ -2339,9 +2185,9 @@ if ( ret = ::putenv(disp) != 0 )
 return(ret);
 }
 
-int setupServerX(int debug,int display)
+int setupServerX(int debug,int sockNum)
 {
-std::cerr << "setupServerX : " << display << std::endl;
+std::cerr << "setupServerX : " << sockNum << std::endl;
 if (( Xwindow::display = ::XOpenDisplay(displayVariable)) == NULL )
    {
    std::cerr << "Failed to open display" << std::endl;
@@ -2355,7 +2201,7 @@ X11Serv -> setReUse();
 // stream and open new sock with X-server and also need to
 // deal with more than one client
 //
-std::cerr << "Binding Socket : " << 6000 + display << std::endl;
+std::cerr << "Binding Socket : " << 6000 + sockNum << std::endl;
 if (debug) // Are we in debugging mode ?
    {
    while ( X11Serv -> bind(INADDR_ANY,6003) < 0 )
@@ -2367,12 +2213,12 @@ if (debug) // Are we in debugging mode ?
    }
 else
    {
-   while ( X11Serv -> bind(INADDR_ANY,6000 + display) < 0 )
+   while ( X11Serv -> bind(INADDR_ANY,6000 + sockNum) < 0 )
       {
-      display++;
+      sockNum++;
       }
    }
-std::cerr << "Listening on X11 Server " << 6000 + display << std::endl;
+std::cerr << "Listening on X11 Server " << 6000 + sockNum << std::endl;
 X11Serv -> listen(5);
 return(0);
 }
@@ -2392,177 +2238,11 @@ if ( ::execlp(command,command,NULL) < 0 )
 return(0);  
 }
 
-// This has been hacked/hard coded just to work
-// This needs a rewrite to cope with XDMCP states and
-// also processing other java client requests
-void process_XDMCP(int clientAddr, int displayID)
-{
-typedef struct __attribute__((__packed__)) headerStr {
-       CARD16 version;
-       CARD16 opcode;
-       CARD16 length;
-       } header;
-
-typedef struct queryRequestStr {
-       CARD8  number;
-       } queryRequest;
-
-typedef struct willingResponseStr {
-       char   authenticationName[8];
-       char   hostName[8];
-       char   status[8];
-       } willingResponse;
-
-typedef struct __attribute__((__packed__)) requestRequestStr {
-       CARD16 displayID;
-       CARD8  connectionTypeNum;
-// Just the one type IPv4 - No IPv6
-//       CARD16 connectionType[2];
-       CARD16 connectionType[1];
-       CARD8  connectionAddrNum;
-       CARD16 addr1Len;
-       CARD32 addr1;
-// Just the one type IPv4 - No IPv6
-//       CARD16 addr2Len;
-//       CARD32 addr2[4];
-       CARD16 authenticationNameLen;
-       CARD16 authenticationDataLen;
-       CARD8  authorizationNamesLen;
-       CARD16 name1Len;
-       char   name1[0x12];
-       CARD16 name2Len;
-       char   name2[0x13];
-       CARD16 name3Len;
-       char   name3[0x09];
-       CARD16 manufacturersDisplayIDLen;
-       } requestRequest;      
-
-typedef struct acceptResponseStr {
-       CARD32 sessionID;
-       CARD16 authLen;
-       char   authData[100];
-       } acceptResponse;
-
-typedef struct manageRequestStr {
-       CARD32 sessionID;
-       CARD16 displayID;
-       CARD16 displayClassLen;
-       char   displayClass[15];
-       } manageRequest;
-
-struct __attribute__((__packed__)) RequestStr {
-       headerStr hdr;
-       union {
-             queryRequestStr queryRequest;
-	     requestRequestStr requestRequest;
-	     manageRequestStr manageRequest;
-             } data;
-      } Request;
-
-struct __attribute__((__packed__)) ResponseStr {
-       headerStr hdr;
-       union {
-             willingResponseStr willingResponse;
-             acceptResponseStr acceptResponse;
-	     } data;
-      } Response;
-
-int complete = FALSE;
-int sessionID;
-
-std::cerr << "Start XDMCP : "<< std::endl;
-
-tcpSocket udp(AF_INET,SOCK_DGRAM);
-udp.setAddress(INADDR_LOOPBACK,177);
-udp.setBroadcastEnable();
-
-Request.hdr.version = htons(1);
-Request.hdr.opcode  = htons(2);
-Request.hdr.length  = htons(1);;
-Request.data.queryRequest.number  = 0;
-
-
-udp.sendTo((char *) &Request,7);
-std::cerr << "XDMCP Query Sent" << std::endl;
-while ( complete == FALSE ) {
-	udp.receiveFrom((char *) &Response,sizeof(Response));
-	std::cerr << "XDMCP Client Opcode : "<< ntohs(Response.hdr.opcode) << std::endl;
-
-	switch (ntohs(Response.hdr.opcode)) {
-	     case 5 :    	  // Willing received 
-                  std::cerr << "XDMCP Willing Received - DisplayID : "<< displayID << std::endl;
-        	  Request.hdr.version = htons(1);
-       		  Request.hdr.opcode  = htons(7);
-//        	  Request.hdr.length  = htons(0x5b);
-		  Request.hdr.length  = htons(sizeof(Request.data.requestRequest));
-// DisplayID
-        	  Request.data.requestRequest.displayID = htons(displayID);
-// Just the one type IPv4 - No IPv6
-//        	  Request.data.requestRequest.connectionTypeNum = 2;
-		  Request.data.requestRequest.connectionTypeNum = 1;
-        	  Request.data.requestRequest.connectionType[0] = 0;
-// Just the one type IPv4 - No IPv6
-//        	  Request.data.requestRequest.connectionType[1] = htons(6);
-//        	  Request.data.requestRequest.connectionAddrNum = 2;
-		  Request.data.requestRequest.connectionAddrNum = 1;
-        	  Request.data.requestRequest.addr1Len = htons(4);
-// Client Addr
-        	  Request.data.requestRequest.addr1 = clientAddr;
-// Just the one type IPv4 - No IPv6
-//        	  Request.data.requestRequest.addr2Len = htons(16);
-//		  Request.data.requestRequest.addr2[0] = 0x000080fe;
-//		  Request.data.requestRequest.addr2[1] = 0x00000000;
-//                Request.data.requestRequest.addr2[2] = 0x022264ff;
-//		  Request.data.requestRequest.addr2[2] = 0xff642220;
-//                  Request.data.requestRequest.addr2[3] = 0xfe278592;
-//		  Request.data.requestRequest.addr2[3] = 0x928527fe;
-        	  Request.data.requestRequest.authenticationNameLen = 0;
-        	  Request.data.requestRequest.authenticationDataLen = 0;
-        	  Request.data.requestRequest.authorizationNamesLen = 3;
-        	  Request.data.requestRequest.name1Len = htons(0x12);
-        	  ::strcpy(Request.data.requestRequest.name1,"MIT-MAGIC-COOKIE-1");
-        	  Request.data.requestRequest.name2Len = htons(0x13);
-        	  ::strcpy(Request.data.requestRequest.name2,"XDM-AUTHORIZATION-1");
-        	  Request.data.requestRequest.name3Len = htons(0x09);
-        	  ::strcpy(Request.data.requestRequest.name3,"SUN-DES-1");
-        	  Request.data.requestRequest.manufacturersDisplayIDLen = 0;
-		  std::cerr << "XDMCP Request sent" << std::endl;
-        	  udp.sendTo((char *) &Request,sizeof(Request.hdr)+sizeof(Request.data.requestRequest));
-//		  udp.sendTo((char *) &Request,0x5B);
-		  std::cerr << "XDMCP Length : " << htons(Request.hdr.length) << std::endl;
-        	  break;
-     
-     	     case 8 :  // Accept received
-                  std::cerr << "XDMCP Accept Received - Session ID : " << htonl(Response.data.acceptResponse.sessionID) << std::endl;
-                  sessionID = Response.data.acceptResponse.sessionID;
-          	  // Send Manage
-          	  Request.hdr.version = htons(1);
-          	  Request.hdr.opcode  = htons(10);
-          	  Request.hdr.length  = htons(0x17);;
-          	  Request.data.manageRequest.sessionID = sessionID;
-          	  Request.data.manageRequest.displayID = htons(displayID);
-          	  Request.data.manageRequest.displayClassLen = htons(0xF);
-          	  ::strcpy(Request.data.manageRequest.displayClass,"MIT-unspecified");
-		  udp.sendTo((char *) &Request,sizeof(Request.hdr)+0x17);
-//          	  udp.sendTo((char *) &Request,sizeof(Request.hdr)+sizeof(Request.data.manageRequest));
-	          std::cerr << "XDMCP Manage Sent" << std::endl;
-		  complete = TRUE;
-                  break;
-
-      	      default :
-          	   std::cerr << "XDMCP Request not handled : " << ntohs(Response.hdr.opcode) << std::endl;
-                   break;
-              }
-       }
-}
-
-
 int inetdProcess(int dispNum)
 {
 int errFlag;
 int setupPid;
 
-// Needs updating & testing
 std::cerr << "Running under inetd" << std::endl;
 std::cerr << "Running under inetd NOT YET UPDATED" << std::endl;
 return(-1); // Abort
@@ -2586,29 +2266,26 @@ else
    while (errFlag == 0)
       {
       std::cerr << "Accepting X11 Server" << std::endl;
-      //Xwindow::X11sock  = new tcpSocket(X11Serv-> accept());
-      //connectionSetup(sockPtr);
+      Xwindow::X11sock  = new tcpSocket(X11Serv-> accept());
+      connectionSetup();
       errFlag = process();
       }
    ::kill(setupPid,SIGQUIT);
-   //Xwindow::X11sock -> close();
+   Xwindow::X11sock -> close();
    }
 return(errFlag);
 }
 
-int listenProcess(int dispNum)
+int listenProcess(int sockNum,int dispNum)
 {
 int       errFlag;
 
 char	  command[120];
-char      hostname[120];
 
+std::cerr << "ListenProcess Socket Number : " << sockNum << " Display Number : " << dispNum << std::endl;
 std::cerr << "Opening Java server Socket" << std::endl;
 javaServ = new tcpSocket(AF_INET,SOCK_STREAM);
 javaServ -> setReUse();
-javaServ -> getHostName(hostname,120);
-javaServ -> getHostIP();
-
 std::cerr << "Binding Socket" << std::endl;
 while ( javaServ -> bind(INADDR_ANY,PORT) < 0 )
    {
@@ -2617,68 +2294,61 @@ while ( javaServ -> bind(INADDR_ANY,PORT) < 0 )
    }
 std::cerr << "Listening on Java Server" << std::endl;
 javaServ -> listen(5);
-
-std::cerr << "Accepting java Server" << std::endl;
-Xwindow::javasock  = new tcpSocket(javaServ-> accept());
-std::cerr << "Reading required X Client Application" << std::endl;
-std::memset(command,0,120);	
-readCommand(command);
-std::cerr << "Command Read : " << command << std::endl;
-// Open X11 Server port & listen in preperation
-setupServerX(True,dispNum);
-if (std::strcmp(command,"XDMCP") == 0)
+errFlag = 0;
+while ( errFlag == 0 )
    {
-   int client;
-
-   // Process XDMCP which should open X11 Session
-   client = javaServ -> getHostIP();
-   process_XDMCP(client,dispNum);
-   }
-else if (std::strcmp(command,"Null") != 0)
-   // We have to fork and exec X Client
-   {
-   std::cerr << "Forking for X Client" << std::endl;
-   if ((setupPid1 = ::fork()) < 0 ) // Fork and check okay
+   std::cerr << "Accepting java Server" << std::endl;
+   Xwindow::javasock  = new tcpSocket(javaServ-> accept());
+   std::cerr << "Reading required X Client Application" << std::endl;
+   std::memset(command,0,120);	
+   readCommand(command);
+   std::cerr << "Command Read : " << command << std::endl;
+   std::cerr << "Main Forking" << std::endl;
+   if ((setupPid = ::fork()) < 0 ) // Fork and check okay
       {
-      std::cerr << "Fork failed for X Client : " << errno << std::endl;
+      std::cerr << "Main Fork failed : " << errno << std::endl;
       return(-1);
       }
-   std::cerr << "Process Id : " << setupPid1 << std::endl;
-   if ( setupPid1 == 0 ) // Is this the Child - Exec X Client
+   if ( setupPid == 0 ) // Is this the Child - Read Application
       {
-      // Close sockets
-      X11Serv -> close();
-      // Close main java server socket
+      // Close main java socket
       javaServ -> close();
-      // Close Java socket
-      Xwindow::javasock -> close();
-      // Export appropriate DISPLAY variable
-      exportDisplay(dispNum);
-      execClient(command);
+      std::cerr << "Forking for X Client" << std::endl;
+      if ((setupPid = ::fork()) < 0 ) // Fork and check okay
+      	 {
+         std::cerr << "Fork failed for X Client : " << errno << std::endl;
+         return(-1);
+         }
+      if ( setupPid == 0 ) // Is this the Child - Exec X Client
+         {
+         // Close java socket
+         Xwindow::javasock -> close();
+      	 // Xwindow::javasock -> close();
+      	 // Export appropriate DISPLAY variable
+	 exportDisplay(dispNum);
+         execClient(command);
+         }
+      else // Accept data from X11 Client and process
+         {	
+         setupServerX(True,sockNum);
+         while (errFlag == 0)
+             {
+             std::cerr << "Accepting X11 Server" << std::endl;
+             Xwindow::X11sock  = new tcpSocket(X11Serv-> accept());
+             std::cerr << "Close Main X11 socket" << std::endl;
+             X11Serv -> close();
+             connectionSetup();
+             // Process requests from X11 Client
+             errFlag = process();
+             }
+         } 
       }
-   }
-std::cerr << "Main Forking" << std::endl;
-if ((setupPid2 = ::fork()) < 0 ) // Fork and check okay
-   {
-   std::cerr << "Main Fork failed : " << errno << std::endl;
-   return(-1);
-   }
-if ( setupPid2 == 0 ) // Is this the Child 
-   {     
-   do 
+   else
       {
-      // Process Client
-      errFlag = process();
-      } while (errFlag == 0);
-   }
-else
-   {
-   // This is root Parent Task go back to accepting new applets
-   std::cerr << std::endl << "Root Process Close socket and back to Accepting" << std::endl;
-   // Close X11 Server socket if open i.e. XDCMP
-   X11Serv -> close();
-   // Close java client socket
-   Xwindow::javasock -> close();
+      // This is root Parent Task go back to accepting new applets
+      std::cerr << "Root Process Close socket and back to Accepting" << std::endl;
+      Xwindow::javasock -> close();
+      }
    }
 return(0);
 }
@@ -2697,8 +2367,8 @@ setbuf(stdout,0);
 ::signal(SIGINT,sigHandler);
 ::signal(SIGUSR1,sigHandler);
 
-std::cerr << "JavaXServ version 1.1 alpha Copyright: Keith Sloan 1997-2015" << std::endl;
-dispNum = 3;
+std::cerr << "JavaXServ version 1.0 alpha Copyright: Keith Sloan 1997-2013" << std::endl;
+dispNum = sockNum = 3;
 if ( argc > 1 )
    {
    sockNum = atoi(argv[1]);
@@ -2707,7 +2377,7 @@ if ( argc > 2 )
    {
    dispNum = atoi(argv[2]);
    }
-std::cerr << " Display Number : " << dispNum << std::endl;   
+std::cerr << "Socket Number : " << sockNum << " Display Number : " << dispNum << std::endl;   
 if ((displayVariable = ::getenv("DISPLAY")) == 0 )
    {
    std::cerr << "DISPLAY variable Not set" << std::endl;
@@ -2724,7 +2394,7 @@ rootWin = new Xwindow(-1,XDefaultRootWindow(Xwindow::display),NULL,0,0,600,800,8
 rootGC = new GraphicContext();
 if ( ::strstr(argv[0],"ijavaServ" ) == 0 )
    {
-   listenProcess(dispNum);
+   listenProcess(sockNum,dispNum);
    }
 else
    {

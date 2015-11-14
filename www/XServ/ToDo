@@ -23,3 +23,6 @@ Colour map for PutImage needs sorting - done
 Window & Pixmap treated similar Windows type = 0, Pixmap type = 1
 
 Why is index needed in Xwindow?
+Error handling i.e. when JavaXServ is not running
+Latest Java
+Security

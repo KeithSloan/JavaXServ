@@ -6,13 +6,10 @@ INCLUDES = -I .
 SOURCES = $(wildcard *.C)
 OBJECTS = $(SOURCES:.C=.o)
 
-all: JavaXServ 
+all: JavaXServ
 
 JavaXServ:	$(OBJECTS)
-	$(CC) -o JavaXServ $(OBJECTS) $(LIBS)
-
-#XDMCP-Client: XDMCP-Client.o
-#	$(CC) -o XDMCP-Client 
+	$(CC) -o JavaXServ $(OBJECTS) $(LIBS)	
 
 %.o : %.C %.h
 	$(CC) $(CFLAGS) $<

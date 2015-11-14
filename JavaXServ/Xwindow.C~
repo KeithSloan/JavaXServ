@@ -581,7 +581,7 @@ return(javaId);
 //------------------------------------------------------//
 // Map SubWindows 					//
 //------------------------------------------------------//
-void Xwindow::MapSubWindows(tcpSocket *sockPtr,int num)
+void Xwindow::MapSubWindows(tcpSocket sockPtr,int num)
 {
 int count;
 Xwindow *ptr;
@@ -598,7 +598,7 @@ if ( firstSub != NULL )
       ptr = ptr -> levelNext;
       }
    if ( mapState == 2 )
-      exposePendingSubWindows(sockPtr,num);
+      exposePendingSubWindows(num);
    }
 }
 

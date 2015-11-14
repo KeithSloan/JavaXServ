@@ -245,7 +245,7 @@ while ( i < len)
    std::cerr << "Bytes read : " << j << std::endl;
    if ( j <= 0 )
       {
-      //close();
+      close();
       return(j);
       }
    buffer += j;
