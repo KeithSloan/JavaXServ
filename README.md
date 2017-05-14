@@ -2,7 +2,7 @@ JavaXServ (c) Keith Sloan
 
 The idea behind JavaXServ is to allow people to run X11 Clients via a Java enabled browser.
 
-The original motivation was to implement a facility such that IBM's AIX info facility could be accssed from the internet via a browser.
+The original motivation was to implement a facility such that IBM's AIX info application could be accssed from the internet via a browser.
 
 Java security has changed a lot since the initial development and now requires a small amount of developer or two to address.
 
